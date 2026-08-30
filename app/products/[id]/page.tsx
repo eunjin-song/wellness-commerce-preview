@@ -1,16 +1,12 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { getProductById, PRODUCTS } from "@/lib/mock/products"
+import { getProductById } from "@/lib/mock/products"
 import ProductGallery from "@/components/products/ProductGallery"
 import ProductPurchasePanel from "@/components/products/ProductPurchasePanel"
 import ProductTabs from "@/components/products/ProductTabs"
 
 interface Props {
   params: Promise<{ id: string }>
-}
-
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ id: p.id }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
