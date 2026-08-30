@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return {}
 
   return {
-    title: `${product.name} — Still & Sage`,
+    title: `${product.name} — ooro.`,
     description: product.subtitle,
   }
 }

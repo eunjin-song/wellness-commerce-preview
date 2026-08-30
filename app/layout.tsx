@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond } from "next/font/google";
+import { Cormorant_Garamond, Pacifico } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -10,11 +10,17 @@ const cormorant = Cormorant_Garamond({
   weight: ["400", "500", "600"],
 });
 
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
-  title: "Still & Sage — 프리미엄 웰니스",
-  description: "하루의 리듬을 되찾는 웰니스 브랜드 Still & Sage 미리보기",
+  title: "ooro. — 프리미엄 웰니스",
+  description: "하루의 리듬을 되찾는 웰니스 브랜드 ooro. 미리보기",
   openGraph: {
-    title: "Still & Sage",
+    title: "ooro.",
     description: "하루의 리듬을 되찾는 웰니스 브랜드",
     type: "website",
   },
@@ -26,7 +32,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${cormorant.variable} h-full antialiased`}>
+    <html lang="ko" className={`${cormorant.variable} ${pacifico.variable} h-full antialiased`}>
       <head>
         <link
           rel="stylesheet"

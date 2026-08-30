@@ -19,8 +19,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-sage-200/70 bg-cream/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Link href="/" className="font-display text-2xl tracking-wide text-ink">
-          Still&nbsp;&amp;&nbsp;Sage
+        <Link href="/" className="font-logo text-3xl leading-none text-brand">
+          ooro.
         </Link>
 
         <nav className="hidden gap-8 text-sm text-ink/60 md:flex">

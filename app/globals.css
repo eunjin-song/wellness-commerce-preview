@@ -9,6 +9,8 @@
   --color-sage-600: #5e6e52;
   --color-sage-900: #333b2c;
   --color-ink: #2b2a26;
+  --color-brand: #8b6f5c;
+  --color-brand-reverse: #f6eee5;
 }
 
 @theme inline {
@@ -20,9 +22,12 @@
   --color-sage-600: var(--color-sage-600);
   --color-sage-900: var(--color-sage-900);
   --color-ink: var(--color-ink);
+  --color-brand: var(--color-brand);
+  --color-brand-reverse: var(--color-brand-reverse);
 
   --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Malgun Gothic", sans-serif;
+  --font-logo: var(--font-pacifico), "Pacifico", cursive;
 
   --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
 }

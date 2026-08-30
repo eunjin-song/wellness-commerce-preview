@@ -6,7 +6,7 @@ export default function AboutPage() {
       <section className="relative h-[70vh] min-h-[420px] w-full overflow-hidden">
         <Image
           src="https://picsum.photos/seed/wellness-about-hero/1600/1000"
-          alt="Still & Sage 브랜드 무드"
+          alt="ooro. 브랜드 무드"
           fill
           priority
           className="object-cover"
@@ -46,7 +46,7 @@ export default function AboutPage() {
             일상을 들여다봤습니다
           </h2>
           <p className="mt-6 leading-relaxed text-ink/60">
-            Still &amp; Sage는 화려한 효능 문구 대신, 실제로 사용하는 사람의
+            ooro.는 화려한 효능 문구 대신, 실제로 사용하는 사람의
             하루를 먼저 관찰하는 것에서 시작했습니다. 잠들기 전 뒤척이는 밤,
             아침마다 반복되는 피로감 — 그 사이사이에 놓일 수 있는 가장
             단순한 형태의 제품을 만들고자 했습니다.

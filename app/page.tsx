@@ -9,7 +9,7 @@ export default function HomePage() {
     <main>
       <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-32">
         <div>
-          <p className="text-sm tracking-[0.2em] text-sage-600">STILL &amp; SAGE</p>
+          <p className="text-sm tracking-[0.2em] text-sage-600">OORO.</p>
           <h1 className="mt-4 font-display text-5xl leading-[1.15] text-ink md:text-6xl">
             하루의 리듬을
             <br />
@@ -31,7 +31,7 @@ export default function HomePage() {
         <div className="relative aspect-4/5 overflow-hidden rounded-[2rem] bg-cream-dark">
           <Image
             src="https://picsum.photos/seed/wellness-hero/900/1125"
-            alt="Still & Sage 무드 이미지"
+            alt="ooro. 무드 이미지"
             fill
             priority
             className="object-cover"
