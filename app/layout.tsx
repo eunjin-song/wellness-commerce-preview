@@ -3,6 +3,8 @@ import { Cormorant_Garamond, Pacifico } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ComingSoon from "@/components/ComingSoon";
+import { isComingSoon } from "@/lib/site";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -40,9 +42,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="flex min-h-full flex-col bg-cream text-ink">
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        {isComingSoon ? (
+          <ComingSoon />
+        ) : (
+          <>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </>
+        )}
       </body>
     </html>
   );

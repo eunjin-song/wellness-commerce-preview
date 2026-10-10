@@ -37,3 +37,26 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+@keyframes coming-soon-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.coming-soon-fade {
+  opacity: 0;
+  animation: coming-soon-fade 900ms var(--ease-gentle) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coming-soon-fade {
+    opacity: 1;
+    animation: none;
+  }
+}
