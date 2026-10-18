@@ -1,22 +1,24 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { useApp } from "@/lib/store/app"
 import { useUser } from "@/lib/hooks"
+import { useToggleWish, useWishlistIds } from "@/lib/queries/account"
 
 export default function HeartButton({ productId, className = "" }: { productId: string; className?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const { user } = useUser()
-  const wished = useApp((s) => (user ? (s.wishlist[user.id]?.includes(productId) ?? false) : false))
-  const toggleWish = useApp((s) => s.toggleWish)
+  const wishlist = useWishlistIds()
+  const toggle = useToggleWish()
+
+  const wished = user !== null && (wishlist.data?.includes(productId) ?? false)
 
   function handleClick() {
     if (!user) {
       router.push(`/login?next=${encodeURIComponent(pathname)}`)
       return
     }
-    toggleWish(user.id, productId)
+    toggle.mutate({ productId, wished })
   }
 
   return (
@@ -25,6 +27,7 @@ export default function HeartButton({ productId, className = "" }: { productId: 
       onClick={handleClick}
       aria-pressed={wished}
       aria-label={wished ? "찜 해제" : "찜하기"}
+      disabled={toggle.isPending}
       className={`inline-flex h-10 w-10 items-center justify-center rounded-full text-brown transition ${className}`}
     >
       <svg

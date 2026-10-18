@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import type { Product } from "@/lib/mock/products"
-import { PRODUCTS } from "@/lib/mock/products"
-import { useApp } from "@/lib/store/app"
+import type { AdminProduct } from "@/lib/types"
+import { useDeleteProduct, useSaveProduct } from "@/lib/queries/admin"
+import { toKoreanError } from "@/lib/db/errors"
 import { uid } from "@/lib/format"
 import ImagePicker from "@/components/ui/ImagePicker"
 
@@ -26,23 +26,22 @@ function parseWon(value: string): number | null {
   return Number.isInteger(n) && n >= 0 ? n : null
 }
 
-export default function ProductEditor({ product }: { product?: Product }) {
+export default function ProductEditor({ product }: { product?: AdminProduct }) {
   const router = useRouter()
-  const saveProduct = useApp((s) => s.saveProduct)
-  const removeCustomProduct = useApp((s) => s.removeCustomProduct)
-  const isSample = product ? PRODUCTS.some((p) => p.id === product.id) : false
+  const save = useSaveProduct()
+  const remove = useDeleteProduct()
 
   const [name, setName] = useState(product?.name ?? "")
   const [subtitle, setSubtitle] = useState(product?.subtitle ?? "")
   const [category, setCategory] = useState(product?.category ?? "")
   const [price, setPrice] = useState(product ? String(product.price) : "")
   const [stock, setStock] = useState(product ? String(product.stock) : "0")
-  const [isActive, setIsActive] = useState(product?.isActive !== false)
+  const [isActive, setIsActive] = useState(product?.isActive ?? true)
   const [images, setImages] = useState<string[]>(product?.images ?? [])
   const [colors, setColors] = useState<ColorRow[]>(
-    product?.colors?.map((c) => ({ name: c.name, hex: c.hex, extra: String(c.extra ?? 0) })) ?? []
+    product?.colors.map((c) => ({ name: c.name, hex: c.hex, extra: String(c.extra ?? 0) })) ?? []
   )
-  const [sizes, setSizes] = useState<SizeRow[]>(product?.sizes?.map((s) => ({ name: s.name, extra: String(s.extra ?? 0) })) ?? [])
+  const [sizes, setSizes] = useState<SizeRow[]>(product?.sizes.map((s) => ({ name: s.name, extra: String(s.extra ?? 0) })) ?? [])
   const [ingredients, setIngredients] = useState(product?.ingredients ?? "")
   const [usageGuide, setUsageGuide] = useState(product?.usageGuide ?? "")
   const [description, setDescription] = useState(product?.description ?? "")
@@ -50,7 +49,7 @@ export default function ProductEditor({ product }: { product?: Product }) {
   const [errors, setErrors] = useState<string[]>([])
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const found: string[] = []
 
@@ -78,34 +77,42 @@ export default function ProductEditor({ product }: { product?: Product }) {
       return
     }
 
-    const next: Product = {
-      id: product?.id ?? `p-${uid()}`,
-      name: name.trim(),
-      subtitle: subtitle.trim(),
-      category: category.trim(),
-      price: priceValue ?? 0,
-      stock: stockValue ?? 0,
-      isActive,
-      images,
-      colors: colors.length > 0 ? colors.map((c) => ({ name: c.name.trim(), hex: c.hex, extra: parseWon(c.extra) ?? 0 })) : undefined,
-      sizes: sizes.length > 0 ? sizes.map((s) => ({ name: s.name.trim(), extra: parseWon(s.extra) ?? 0 })) : undefined,
-      ingredients: ingredients.trim(),
-      usageGuide: usageGuide.trim(),
-      description: description.trim(),
-      reviews: product?.reviews ?? [],
+    try {
+      await save.mutateAsync({
+        id: product?.id ?? `p-${uid()}`,
+        name: name.trim(),
+        subtitle: subtitle.trim(),
+        category: category.trim(),
+        price: priceValue ?? 0,
+        stock: stockValue ?? 0,
+        isActive,
+        images,
+        colors: colors.map((c) => ({ name: c.name.trim(), hex: c.hex, extra: parseWon(c.extra) ?? 0 })),
+        sizes: sizes.map((s) => ({ name: s.name.trim(), extra: parseWon(s.extra) ?? 0 })),
+        ingredients: ingredients.trim(),
+        usageGuide: usageGuide.trim(),
+        description: description.trim(),
+      })
+      router.push("/admin/products")
+    } catch (err) {
+      setErrors([toKoreanError(err, "저장하지 못했어요. 잠시 후 다시 시도해 주세요.")])
+      window.scrollTo({ top: 0, behavior: "smooth" })
     }
-    saveProduct(next)
-    router.push("/admin/products")
   }
 
   function makeCover(index: number) {
     setImages((prev) => [prev[index], ...prev.filter((_, i) => i !== index)])
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!product) return
-    removeCustomProduct(product.id)
-    router.push("/admin/products")
+    try {
+      await remove.mutateAsync(product.id)
+      router.push("/admin/products")
+    } catch (err) {
+      setErrors([toKoreanError(err, "삭제하지 못했어요.")])
+      setConfirmingDelete(false)
+    }
   }
 
   return (
@@ -272,19 +279,19 @@ export default function ProductEditor({ product }: { product?: Product }) {
       </section>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-brown/25 pt-8">
-        <button type="submit" className="btn-primary">
-          {product ? "수정 저장" : "상품 등록"}
+        <button type="submit" className="btn-primary" disabled={save.isPending}>
+          {save.isPending ? "저장 중…" : product ? "수정 저장" : "상품 등록"}
         </button>
         <button type="button" className="btn-outline" onClick={() => router.push("/admin/products")}>
           취소
         </button>
 
-        {product && !isSample && (
+        {product && (
           <span className="ml-auto">
             {confirmingDelete ? (
               <span className="flex items-center gap-3 text-sm">
-                정말 삭제할까요?
-                <button type="button" className="font-medium underline underline-offset-4" onClick={handleDelete}>
+                정말 삭제할까요? (주문 기록은 남아요)
+                <button type="button" className="font-medium underline underline-offset-4" onClick={handleDelete} disabled={remove.isPending}>
                   삭제
                 </button>
                 <button type="button" className="underline underline-offset-4" onClick={() => setConfirmingDelete(false)}>
@@ -293,12 +300,11 @@ export default function ProductEditor({ product }: { product?: Product }) {
               </span>
             ) : (
               <button type="button" className="text-xs underline underline-offset-4" onClick={() => setConfirmingDelete(true)}>
-                상품 삭제
+                상품 삭제 (보통은 &apos;숨김&apos;을 추천해요)
               </button>
             )}
           </span>
         )}
-        {product && isSample && <span className="ml-auto text-xs">샘플 상품은 삭제 대신 &apos;숨김&apos;으로 바꿀 수 있어요.</span>}
       </div>
     </form>
   )

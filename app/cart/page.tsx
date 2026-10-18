@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation"
 import { optionLabel, useCartStore } from "@/lib/store/cart"
 import { useCheckout } from "@/lib/store/checkout"
 import { useHydrated } from "@/lib/hooks"
-import { FREE_SHIPPING_THRESHOLD, shippingFor } from "@/lib/shop"
+import { useSettings } from "@/lib/queries/shop"
+import { shippingFor } from "@/lib/shop"
 import { won } from "@/lib/format"
 
 export default function CartPage() {
   const router = useRouter()
   const hydrated = useHydrated()
+  const settings = useSettings()
   const items = useCartStore((s) => s.items)
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const removeItem = useCartStore((s) => s.removeItem)
@@ -20,7 +22,7 @@ export default function CartPage() {
   if (!hydrated) return <main className="mx-auto max-w-3xl px-6 py-16" aria-busy="true" />
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-  const shippingFee = shippingFor(subtotal)
+  const shippingFee = shippingFor(subtotal, settings)
 
   if (items.length === 0) {
     return (
@@ -104,13 +106,14 @@ export default function CartPage() {
           <dd className="tabular-nums">{shippingFee === 0 ? "무료" : won(shippingFee)}</dd>
         </div>
         {shippingFee > 0 && (
-          <p className="text-xs">{won(FREE_SHIPPING_THRESHOLD - subtotal)} 더 담으면 배송비가 무료예요.</p>
+          <p className="text-xs">{won(settings.freeShippingThreshold - subtotal)} 더 담으면 배송비가 무료예요.</p>
         )}
         <div className="flex items-baseline justify-between border-t border-brown/25 pt-4">
           <dt className="text-base">총 결제 금액</dt>
           <dd className="font-display text-2xl tabular-nums">{won(subtotal + shippingFee)}</dd>
         </div>
       </dl>
+      <p className="mt-3 text-xs">장바구니의 가격은 예상 금액이에요. 주문할 때 서버가 가격·재고를 다시 확인해요.</p>
 
       <button type="button" onClick={handleOrder} className="btn-primary mt-8 w-full py-4">
         주문하기

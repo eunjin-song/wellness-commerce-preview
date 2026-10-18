@@ -2,23 +2,37 @@
 
 import { useState } from "react"
 import type { Address } from "@/lib/types"
-import { useApp } from "@/lib/store/app"
 import { useUser } from "@/lib/hooks"
+import { useAddressMutations, useAddresses } from "@/lib/queries/account"
+import { toKoreanError } from "@/lib/db/errors"
 import AddressForm from "@/components/mypage/AddressForm"
 
 const EMPTY: Address[] = []
 
 export default function AddressManager() {
   const { user } = useUser()
-  const addresses = useApp((s) => (user ? (s.addresses[user.id] ?? EMPTY) : EMPTY))
-  const { addAddress, updateAddress, removeAddress, setDefaultAddress } = useApp.getState()
+  const query = useAddresses()
+  const addresses = query.data ?? EMPTY
+  const { add, update, remove, setDefault } = useAddressMutations()
 
   const [mode, setMode] = useState<"list" | "new" | { editId: string }>("list")
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   if (!user) return null
 
   const editing = typeof mode === "object" ? addresses.find((a) => a.id === mode.editId) : undefined
+
+  async function run(action: () => Promise<unknown>, fallback: string) {
+    setError(null)
+    try {
+      await action()
+      return true
+    } catch (err) {
+      setError(toKoreanError(err, fallback))
+      return false
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -31,14 +45,19 @@ export default function AddressManager() {
         )}
       </div>
 
+      {error && (
+        <p role="alert" className="field-error">
+          {error}
+        </p>
+      )}
+
       {mode === "new" && (
         <AddressForm
           defaultRecipient={user.name}
           defaultPhone={user.phone}
           submitLabel="배송지 저장"
-          onSubmit={(values) => {
-            addAddress(user.id, values)
-            setMode("list")
+          onSubmit={async (values) => {
+            if (await run(() => add.mutateAsync({ input: values }), "배송지를 저장하지 못했어요.")) setMode("list")
           }}
           onCancel={() => setMode("list")}
         />
@@ -48,15 +67,16 @@ export default function AddressManager() {
         <AddressForm
           initial={editing}
           submitLabel="수정 저장"
-          onSubmit={(values) => {
-            updateAddress(user.id, editing.id, values)
-            setMode("list")
+          onSubmit={async (values) => {
+            if (await run(() => update.mutateAsync({ id: editing.id, input: values }), "배송지를 수정하지 못했어요.")) setMode("list")
           }}
           onCancel={() => setMode("list")}
         />
       )}
 
-      {addresses.length === 0 && mode === "list" ? (
+      {query.isPending ? (
+        <p className="py-10 text-center text-sm">불러오는 중이에요…</p>
+      ) : addresses.length === 0 && mode === "list" ? (
         <p className="py-10 text-center text-sm">저장된 배송지가 없어요.</p>
       ) : (
         <ul className="space-y-4">
@@ -82,7 +102,11 @@ export default function AddressManager() {
                   수정
                 </button>
                 {!a.isDefault && (
-                  <button type="button" className="underline underline-offset-4" onClick={() => setDefaultAddress(user.id, a.id)}>
+                  <button
+                    type="button"
+                    className="underline underline-offset-4"
+                    onClick={() => run(() => setDefault.mutateAsync(a.id), "기본 배송지를 바꾸지 못했어요.")}
+                  >
                     기본 배송지로 설정
                   </button>
                 )}
@@ -92,8 +116,8 @@ export default function AddressManager() {
                     <button
                       type="button"
                       className="font-medium underline underline-offset-4"
-                      onClick={() => {
-                        removeAddress(user.id, a.id)
+                      onClick={async () => {
+                        await run(() => remove.mutateAsync(a.id), "배송지를 삭제하지 못했어요.")
                         setRemovingId(null)
                       }}
                     >

@@ -1,0 +1,19 @@
+<!-- Supabase 대시보드 > Authentication > Emails(Email Templates) > "Confirm sign up"
+     제목(Subject):  [ooro.] 이메일 인증을 완료해 주세요
+     아래 내용을 본문(Message body)에 붙여넣으세요.
+     {{ .RedirectTo }} 는 가입 화면이 알려준 주소(우리 사이트의 /auth/confirm)이고,
+     token_hash 방식이라 다른 기기·메일 앱에서 열어도 인증돼요. -->
+<div style="max-width:480px;margin:0 auto;padding:32px 24px;background:#f1eee6;color:#7a6855;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.7;">
+  <p style="margin:0 0 24px;font-size:22px;font-weight:700;">ooro.</p>
+  <p style="margin:0 0 8px;font-size:18px;font-weight:700;">이메일 인증을 완료해 주세요</p>
+  <p style="margin:0 0 24px;font-size:14px;">아래 버튼을 누르면 가입이 완료돼요.</p>
+  <p style="margin:0 0 24px;">
+    <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup"
+       style="display:inline-block;padding:14px 28px;background:#7a6855;color:#fcfbf8;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;">
+      이메일 인증하기
+    </a>
+  </p>
+  <p style="margin:0;font-size:12px;">버튼이 눌리지 않으면 아래 주소를 브라우저에 붙여넣어 주세요.<br>
+    <span style="word-break:break-all;">{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup</span></p>
+  <p style="margin:24px 0 0;font-size:12px;">본인이 가입한 게 아니라면 이 메일을 무시해 주세요.</p>
+</div>

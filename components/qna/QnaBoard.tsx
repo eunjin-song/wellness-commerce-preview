@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
-import { useCatalog, useQuestions, useUser } from "@/lib/hooks"
+import { useMemo, useState } from "react"
+import { useUser } from "@/lib/hooks"
+import { useQuestions } from "@/lib/queries/community"
+import { usePublicProducts } from "@/lib/queries/shop"
 import QnaForm from "@/components/qna/QnaForm"
 import QnaList from "@/components/qna/QnaList"
 
@@ -10,17 +12,18 @@ type StatusFilter = "all" | "waiting" | "done"
 
 export default function QnaBoard() {
   const { user } = useUser()
-  const all = useQuestions()
-  const catalog = useCatalog()
-  const PRODUCT_LIST = catalog.filter((p) => p.isActive !== false).map((p) => ({ id: p.id, name: p.name }))
-  const PRODUCT_NAMES = Object.fromEntries(catalog.map((p) => [p.id, p.name]))
+  const questionsQuery = useQuestions()
+  const products = usePublicProducts().data
   const [status, setStatus] = useState<StatusFilter>("all")
   const [target, setTarget] = useState<string>("all")
   const [writing, setWriting] = useState(false)
 
-  const filtered = all.filter((q) => {
-    if (status === "waiting" && q.answer) return false
-    if (status === "done" && !q.answer) return false
+  const productList = useMemo(() => (products ?? []).map((p) => ({ id: p.id, name: p.name })), [products])
+  const productNames = useMemo(() => Object.fromEntries(productList.map((p) => [p.id, p.name])), [productList])
+
+  const filtered = (questionsQuery.data ?? []).filter((q) => {
+    if (status === "waiting" && q.isAnswered) return false
+    if (status === "done" && !q.isAnswered) return false
     if (target === "general" && q.productId !== null) return false
     if (target !== "all" && target !== "general" && q.productId !== target) return false
     return true
@@ -55,7 +58,7 @@ export default function QnaBoard() {
           ))}
       </div>
 
-      {writing && <QnaForm products={PRODUCT_LIST} onDone={() => setWriting(false)} />}
+      {writing && <QnaForm products={productList} onDone={() => setWriting(false)} />}
 
       <div>
         <label htmlFor="qna-filter-target" className="sr-only">
@@ -64,7 +67,7 @@ export default function QnaBoard() {
         <select id="qna-filter-target" className="field w-auto" value={target} onChange={(e) => setTarget(e.target.value)}>
           <option value="all">전체 문의</option>
           <option value="general">일반 문의</option>
-          {PRODUCT_LIST.map((p) => (
+          {productList.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
@@ -72,7 +75,7 @@ export default function QnaBoard() {
         </select>
       </div>
 
-      <QnaList questions={filtered} productNames={PRODUCT_NAMES} />
+      <QnaList questions={filtered} loading={questionsQuery.isPending} productNames={productNames} />
     </div>
   )
 }

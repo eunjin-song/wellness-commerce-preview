@@ -4,11 +4,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import type { Address, Order } from "@/lib/types"
+import type { Address } from "@/lib/types"
 import { optionLabel, useCartStore } from "@/lib/store/cart"
 import { useCheckout } from "@/lib/store/checkout"
-import { useApp } from "@/lib/store/app"
 import { useRequireUser } from "@/lib/hooks"
+import { useAddressMutations, useAddresses, usePlaceOrder } from "@/lib/queries/account"
+import { useSettings } from "@/lib/queries/shop"
+import { toKoreanError } from "@/lib/db/errors"
 import { shippingFor } from "@/lib/shop"
 import { won } from "@/lib/format"
 import AddressForm from "@/components/mypage/AddressForm"
@@ -18,19 +20,23 @@ const EMPTY: Address[] = []
 export default function CheckoutView() {
   const router = useRouter()
   const { hydrated, user } = useRequireUser()
+  const settings = useSettings()
 
   const items = useCheckout((s) => s.items)
   const source = useCheckout((s) => s.source)
   const resetCheckout = useCheckout((s) => s.reset)
   const clearCart = useCartStore((s) => s.clear)
-  const addresses = useApp((s) => (user ? (s.addresses[user.id] ?? EMPTY) : EMPTY))
-  const { addAddress, placeOrder } = useApp.getState()
+
+  const addressesQuery = useAddresses()
+  const addresses = addressesQuery.data ?? EMPTY
+  const { add: addAddress } = useAddressMutations()
+  const placeOrder = usePlaceOrder()
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [memo, setMemo] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [completed, setCompleted] = useState<Order | null>(null)
+  const [completed, setCompleted] = useState<{ id: string; amount: number } | null>(null)
 
   const ready = hydrated && user !== null
 
@@ -45,6 +51,7 @@ export default function CheckoutView() {
       <main className="mx-auto max-w-lg px-6 py-24 text-center">
         <h1 className="font-display text-3xl">주문이 접수됐어요</h1>
         <p className="mt-4 text-sm">주문번호 {completed.id}</p>
+        <p className="mt-1 text-sm">결제 금액 {won(completed.amount)}</p>
         <p className="mt-2 text-sm">결제 연동 전 단계라 실제 결제는 이뤄지지 않았어요.</p>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link href="/mypage" className="btn-primary">
@@ -60,39 +67,28 @@ export default function CheckoutView() {
 
   const selected = addresses.find((a) => a.id === selectedId) ?? addresses.find((a) => a.isDefault) ?? addresses[0]
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-  const shippingFee = shippingFor(subtotal)
+  const shippingFee = shippingFor(subtotal, settings)
   const total = subtotal + shippingFee
-  const showForm = adding || addresses.length === 0
+  const showForm = adding || (addresses.length === 0 && !addressesQuery.isPending)
 
-  function handlePlaceOrder() {
-    if (!user) return
+  async function handlePlaceOrder() {
     if (!selected) {
       setError("배송지를 추가해 주세요.")
       return
     }
-    const order = placeOrder(user.id, {
-      items: items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        thumbnailUrl: i.thumbnailUrl,
-        color: i.color,
-        size: i.size,
-      })),
-      subtotal,
-      shippingFee,
-      amount: total,
-      recipient: selected.recipient,
-      phone: selected.phone,
-      zip: selected.zip,
-      address1: selected.address1,
-      address2: selected.address2,
-      memo: memo.trim(),
-    })
-    setCompleted(order)
-    if (source === "cart") clearCart()
-    resetCheckout()
+    setError(null)
+    try {
+      const order = await placeOrder.mutateAsync({
+        items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, color: i.color, size: i.size })),
+        address: selected,
+        memo: memo.trim(),
+      })
+      setCompleted(order)
+      if (source === "cart") clearCart()
+      resetCheckout()
+    } catch (err) {
+      setError(toKoreanError(err, "주문하지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
   }
 
   return (
@@ -134,11 +130,15 @@ export default function CheckoutView() {
               defaultRecipient={user.name}
               defaultPhone={user.phone}
               submitLabel="배송지 저장"
-              onSubmit={(values) => {
-                const created = addAddress(user.id, values)
-                setSelectedId(created.id)
-                setAdding(false)
-                setError(null)
+              onSubmit={async (values) => {
+                try {
+                  const created = await addAddress.mutateAsync({ input: values })
+                  setSelectedId(created.id)
+                  setAdding(false)
+                  setError(null)
+                } catch (err) {
+                  setError(toKoreanError(err, "배송지를 저장하지 못했어요."))
+                }
               }}
               onCancel={addresses.length > 0 ? () => setAdding(false) : undefined}
             />
@@ -185,6 +185,7 @@ export default function CheckoutView() {
             id="order-memo"
             className="field"
             value={memo}
+            maxLength={200}
             onChange={(e) => setMemo(e.target.value)}
             placeholder="문 앞에 놓아주세요"
           />
@@ -201,13 +202,14 @@ export default function CheckoutView() {
           <dd className="tabular-nums">{shippingFee === 0 ? "무료" : won(shippingFee)}</dd>
         </div>
         <div className="flex items-baseline justify-between border-t border-brown/25 pt-4">
-          <dt className="text-base">총 결제 금액</dt>
+          <dt className="text-base">총 결제 금액 (예상)</dt>
           <dd className="font-display text-2xl tabular-nums">{won(total)}</dd>
         </div>
       </dl>
 
       <p className="mt-8 rounded-xl bg-paper p-4 text-xs leading-relaxed">
-        결제 연동 전 단계예요. 주문하기를 누르면 결제 없이 &apos;주문 접수&apos; 상태의 테스트 주문이 마이페이지에 저장돼요.
+        결제 연동 전 단계예요. 주문하기를 누르면 결제 없이 &apos;주문 접수&apos; 상태의 테스트 주문이 저장돼요. 최종 금액은 서버가
+        가격·재고·배송비를 다시 계산해서 정해요.
       </p>
 
       {error && (
@@ -216,8 +218,8 @@ export default function CheckoutView() {
         </p>
       )}
 
-      <button type="button" onClick={handlePlaceOrder} className="btn-primary mt-6 w-full py-4">
-        {won(total)} 주문하기
+      <button type="button" onClick={handlePlaceOrder} disabled={placeOrder.isPending} className="btn-primary mt-6 w-full py-4">
+        {placeOrder.isPending ? "주문하는 중…" : `${won(total)} 주문하기`}
       </button>
     </main>
   )

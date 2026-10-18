@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useRequireUser } from "@/lib/hooks"
-import { isAdminEmail } from "@/lib/shop"
 
 const TABS = [
   { href: "/admin", label: "대시보드" },
@@ -19,7 +18,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   if (!hydrated || !user) return <main className="mx-auto max-w-5xl px-6 py-16" aria-busy="true" />
 
-  if (!isAdminEmail(user.email)) {
+  // 화면을 막는 것은 안내용이고, 실제 보호는 DB의 RLS 규칙이 합니다. (관리자가 아니면 데이터가 아예 안 내려와요)
+  if (user.role !== "admin") {
     return (
       <main className="mx-auto max-w-lg px-6 py-32 text-center">
         <h1 className="font-display text-3xl">관리자 전용 페이지예요</h1>
@@ -33,10 +33,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="font-display text-3xl">관리자</h1>
-        <p className="text-xs">미리보기 단계라 이 브라우저에 저장된 데이터만 보이고 수정돼요.</p>
-      </div>
+      <h1 className="font-display text-3xl">관리자</h1>
 
       <nav aria-label="관리자 메뉴" className="mt-8 flex gap-6 overflow-x-auto overflow-y-hidden border-b border-brown/25 text-sm">
         {TABS.map((tab) => {

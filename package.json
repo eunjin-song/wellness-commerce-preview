@@ -7,15 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "open-items": "node scripts/gen-open-items.mjs"
+    "open-items": "node scripts/gen-open-items.mjs",
+    "db:test": "node supabase/tests/security.test.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-query": "^5.104.4",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

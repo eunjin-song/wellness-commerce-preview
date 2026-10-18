@@ -2,27 +2,32 @@
 
 import { useState } from "react"
 import type { Question } from "@/lib/types"
-import { useUser } from "@/lib/hooks"
+import { useSignedUrls } from "@/lib/queries/community"
 import PhotoStrip from "@/components/ui/PhotoStrip"
 
 interface Props {
   questions: Question[]
+  loading?: boolean
   /** 상품 이름을 보여주고 싶을 때 (id → 이름) */
   productNames?: Record<string, string>
 }
 
-export default function QnaList({ questions, productNames }: Props) {
-  const { user } = useUser()
+/** 비공개 저장소의 사진은 열릴 때만 임시 주소를 받아서 보여줍니다. */
+function QuestionPhotos({ paths }: { paths: string[] }) {
+  const { data } = useSignedUrls(paths)
+  if (!data || data.length === 0) return null
+  return <PhotoStrip images={data} label="첨부 사진" />
+}
+
+export default function QnaList({ questions, loading, productNames }: Props) {
   const [openId, setOpenId] = useState<string | null>(null)
 
-  if (questions.length === 0) {
-    return <p className="py-10 text-center text-sm">등록된 Q&A가 없어요.</p>
-  }
+  if (loading) return <p className="py-10 text-center text-sm">불러오는 중이에요…</p>
+  if (questions.length === 0) return <p className="py-10 text-center text-sm">등록된 Q&A가 없어요.</p>
 
   return (
     <ul className="divide-y divide-brown/20 border-y border-brown/20">
       {questions.map((q) => {
-        const canView = !q.isSecret || (user !== null && q.userId === user.id)
         const open = openId === q.id
         const panelId = `qna-panel-${q.id}`
 
@@ -35,8 +40,8 @@ export default function QnaList({ questions, productNames }: Props) {
               aria-controls={panelId}
               onClick={() => setOpenId(open ? null : q.id)}
             >
-              <span className="status-pill mt-0.5 shrink-0" data-tone={q.answer ? "solid" : undefined}>
-                {q.answer ? "답변완료" : "답변대기"}
+              <span className="status-pill mt-0.5 shrink-0" data-tone={q.isAnswered ? "solid" : undefined}>
+                {q.isAnswered ? "답변완료" : "답변대기"}
               </span>
               <span className="min-w-0 flex-1">
                 {productNames && (
@@ -51,7 +56,7 @@ export default function QnaList({ questions, productNames }: Props) {
                       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
                     </svg>
                   )}
-                  {canView ? q.title : "비밀글입니다."}
+                  {q.title}
                 </span>
                 <span className="mt-1 block text-xs">
                   {q.author} · {q.createdAt}
@@ -61,10 +66,10 @@ export default function QnaList({ questions, productNames }: Props) {
 
             {open && (
               <div id={panelId} className="space-y-4 pb-6 pl-0 text-sm sm:pl-[5.5rem]">
-                {canView ? (
+                {q.canView ? (
                   <>
                     <p className="whitespace-pre-line leading-relaxed">{q.content}</p>
-                    {q.images && q.images.length > 0 && <PhotoStrip images={q.images} label="첨부 사진" />}
+                    {q.images.length > 0 && <QuestionPhotos paths={q.images} />}
                     {q.answer ? (
                       <div className="rounded-2xl bg-paper p-5">
                         <p className="text-xs font-medium">ooro. 답변 · {q.answer.createdAt}</p>

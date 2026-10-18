@@ -2,50 +2,55 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useApp } from "@/lib/store/app"
-import { useCatalog } from "@/lib/hooks"
+import { useAdminProducts, useSetProductActive } from "@/lib/queries/admin"
 import { hasPriceVariation } from "@/lib/pricing"
 import { won } from "@/lib/format"
 
 export default function AdminProductList() {
-  const catalog = useCatalog()
-  const saveProduct = useApp((s) => s.saveProduct)
+  const query = useAdminProducts()
+  const setActive = useSetProductActive()
+  const products = query.data ?? []
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm">상품 {catalog.length}개</p>
+        <p className="text-sm">상품 {products.length}개</p>
         <Link href="/admin/products/new" className="btn-primary">
           상품 등록
         </Link>
       </div>
 
-      <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <caption className="sr-only">상품 목록</caption>
-          <thead>
-            <tr className="border-b border-brown/25 text-xs">
-              <th scope="col" className="py-3 pr-4 font-medium">
-                상품
-              </th>
-              <th scope="col" className="py-3 pr-4 font-medium">
-                가격
-              </th>
-              <th scope="col" className="py-3 pr-4 font-medium">
-                재고
-              </th>
-              <th scope="col" className="py-3 pr-4 font-medium">
-                상태
-              </th>
-              <th scope="col" className="py-3 font-medium">
-                <span className="sr-only">관리</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-brown/15">
-            {catalog.map((p) => {
-              const active = p.isActive !== false
-              return (
+      {query.isPending ? (
+        <p className="py-10 text-center text-sm">불러오는 중이에요…</p>
+      ) : query.isError ? (
+        <p role="alert" className="py-10 text-center text-sm">
+          상품을 불러오지 못했어요. 관리자 권한이 있는지 확인해 주세요.
+        </p>
+      ) : (
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <caption className="sr-only">상품 목록</caption>
+            <thead>
+              <tr className="border-b border-brown/25 text-xs">
+                <th scope="col" className="py-3 pr-4 font-medium">
+                  상품
+                </th>
+                <th scope="col" className="py-3 pr-4 font-medium">
+                  가격
+                </th>
+                <th scope="col" className="py-3 pr-4 font-medium">
+                  재고
+                </th>
+                <th scope="col" className="py-3 pr-4 font-medium">
+                  상태
+                </th>
+                <th scope="col" className="py-3 font-medium">
+                  <span className="sr-only">관리</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brown/15">
+              {products.map((p) => (
                 <tr key={p.id}>
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-3">
@@ -67,8 +72,8 @@ export default function AdminProductList() {
                     {p.stock === 0 && <span className="status-pill ml-2">품절</span>}
                   </td>
                   <td className="py-3 pr-4">
-                    <span className="status-pill" data-tone={active ? "solid" : undefined}>
-                      {active ? "판매중" : "숨김"}
+                    <span className="status-pill" data-tone={p.isActive ? "solid" : undefined}>
+                      {p.isActive ? "판매중" : "숨김"}
                     </span>
                   </td>
                   <td className="py-3 text-right">
@@ -79,18 +84,19 @@ export default function AdminProductList() {
                       <button
                         type="button"
                         className="underline underline-offset-4"
-                        onClick={() => saveProduct({ ...p, isActive: !active })}
+                        disabled={setActive.isPending}
+                        onClick={() => setActive.mutate({ id: p.id, isActive: !p.isActive })}
                       >
-                        {active ? "숨기기" : "노출하기"}
+                        {p.isActive ? "숨기기" : "노출하기"}
                       </button>
                     </span>
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

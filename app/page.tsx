@@ -1,8 +1,16 @@
 import Image from "next/image"
 import Link from "next/link"
-import FeaturedProducts from "@/components/products/FeaturedProducts"
+import ProductCard from "@/components/products/ProductCard"
+import ServerNotice from "@/components/layout/ServerNotice"
+import { getPublicProducts } from "@/lib/db/public"
 
-export default function HomePage() {
+// 상품 정보는 30초마다 새로 가져옵니다. (관리자가 바꾼 내용이 곧 반영돼요)
+export const revalidate = 30
+
+export default async function HomePage() {
+  const { products, configured, failed } = await getPublicProducts()
+  const featured = products.filter((p) => p.inStock).slice(0, 3)
+
   return (
     <main>
       <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-32">
@@ -41,7 +49,18 @@ export default function HomePage() {
             전체 보기
           </Link>
         </div>
-        <FeaturedProducts />
+
+        {configured && !failed ? (
+          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
+            {featured.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-10">
+            <ServerNotice configured={configured} />
+          </div>
+        )}
       </section>
     </main>
   )

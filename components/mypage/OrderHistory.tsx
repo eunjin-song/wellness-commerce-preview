@@ -1,22 +1,17 @@
 "use client"
 
-import { useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import type { Order } from "@/lib/types"
-import { useApp } from "@/lib/store/app"
-import { useUser } from "@/lib/hooks"
+import { useMyOrders } from "@/lib/queries/account"
 import { optionLabel } from "@/lib/store/cart"
 import { won } from "@/lib/format"
 
 export default function OrderHistory() {
-  const { user } = useUser()
-  const allOrders = useApp((s) => s.orders)
-  // 선택자 안에서 filter를 쓰면 매번 새 배열이 만들어져 무한 렌더링이 되므로, 밖에서 거릅니다.
-  const orders = useMemo<Order[]>(
-    () => (user ? allOrders.filter((o) => o.userId === user.id) : []),
-    [allOrders, user]
-  )
+  const query = useMyOrders()
+  const orders = query.data ?? []
+
+  if (query.isPending) return <p className="py-16 text-center text-sm">불러오는 중이에요…</p>
+  if (query.isError) return <p className="py-16 text-center text-sm">주문 내역을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
 
   if (orders.length === 0) {
     return (
@@ -45,9 +40,16 @@ export default function OrderHistory() {
           <ul className="mt-4 divide-y divide-brown/15">
             {order.items.map((item, idx) => (
               <li key={`${item.productId}-${idx}`} className="flex items-center gap-4 py-3">
-                <Link href={`/products/${item.productId}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brown/10">
-                  {item.thumbnailUrl && <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover" sizes="64px" />}
-                </Link>
+                {/* 판매가 끝나 삭제된 상품은 링크 없이 보여줍니다 */}
+                {item.productId ? (
+                  <Link href={`/products/${item.productId}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brown/10">
+                    {item.thumbnailUrl && <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover" sizes="64px" />}
+                  </Link>
+                ) : (
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brown/10">
+                    {item.thumbnailUrl && <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover" sizes="64px" />}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{item.name}</p>
                   {optionLabel(item) && <p className="mt-0.5 text-xs">옵션: {optionLabel(item)}</p>}

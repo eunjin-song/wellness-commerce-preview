@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useApp } from "@/lib/store/app"
-import { useUser } from "@/lib/hooks"
-import { maskName } from "@/lib/format"
+import { useCreateQuestion } from "@/lib/queries/community"
+import { toKoreanError } from "@/lib/db/errors"
 import ImagePicker from "@/components/ui/ImagePicker"
 
 interface Props {
@@ -15,8 +14,7 @@ interface Props {
 }
 
 export default function QnaForm({ productId, products, onDone }: Props) {
-  const { user } = useUser()
-  const addQuestion = useApp((s) => s.addQuestion)
+  const create = useCreateQuestion()
 
   const [target, setTarget] = useState<string>(productId ?? "")
   const [title, setTitle] = useState("")
@@ -25,23 +23,25 @@ export default function QnaForm({ productId, products, onDone }: Props) {
   const [isSecret, setIsSecret] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user) return
     if (!title.trim() || !content.trim()) {
       setError("제목과 내용을 모두 입력해 주세요.")
       return
     }
-    addQuestion({
-      productId: target || null,
-      userId: user.id,
-      author: maskName(user.name),
-      title: title.trim(),
-      content: content.trim(),
-      isSecret,
-      images,
-    })
-    onDone()
+    setError(null)
+    try {
+      await create.mutateAsync({
+        productId: target || null,
+        title: title.trim(),
+        content: content.trim(),
+        isSecret,
+        images,
+      })
+      onDone()
+    } catch (err) {
+      setError(toKoreanError(err, "질문을 등록하지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
   }
 
   return (
@@ -109,8 +109,8 @@ export default function QnaForm({ productId, products, onDone }: Props) {
       )}
 
       <div className="flex gap-3">
-        <button type="submit" className="btn-primary">
-          질문 등록
+        <button type="submit" className="btn-primary" disabled={create.isPending}>
+          {create.isPending ? "등록 중…" : "질문 등록"}
         </button>
         <button type="button" onClick={onDone} className="btn-outline">
           취소

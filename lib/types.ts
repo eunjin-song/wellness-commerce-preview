@@ -11,22 +11,40 @@ export interface SizeOption {
   extra?: number
 }
 
-export interface SeedReview {
+export interface Product {
   id: string
-  rating: number
-  content: string
-  author: string
-  createdAt: string
-  option?: string
-  /** 후기 사진 (data URL) */
-  images?: string[]
+  name: string
+  subtitle: string
+  category: string
+  /** 기본 가격. 옵션을 고르면 옵션의 추가 금액이 더해집니다. */
+  price: number
+  /** 고객에게는 품절 여부만 알려줍니다 (재고 숫자는 관리자만 봐요). */
+  inStock: boolean
+  isActive: boolean
+  images: string[]
+  colors: ColorOption[]
+  sizes: SizeOption[]
+  ingredients: string
+  usageGuide: string
+  description: string
 }
 
-export interface Review extends SeedReview {
+/** 관리자 화면용: 재고 숫자까지 포함 */
+export interface AdminProduct extends Product {
+  stock: number
+}
+
+export interface Review {
+  id: string
   productId: string
-  userId?: string
-  /** 후기를 쓴 근거가 된 주문 (구매자 확인용) */
-  orderId?: string
+  author: string
+  rating: number
+  content: string
+  option: string
+  images: string[]
+  isHidden: boolean
+  createdAt: string
+  orderId: string | null
 }
 
 export interface Answer {
@@ -38,22 +56,26 @@ export interface Question {
   id: string
   /** null이면 상품과 무관한 일반 문의 */
   productId: string | null
-  userId?: string
   author: string
   title: string
   content: string
   isSecret: boolean
+  isMine: boolean
+  canView: boolean
+  isAnswered: boolean
+  /** question-photos 저장소 안의 경로 (보려면 임시 주소를 받아야 해요) */
+  images: string[]
+  answer: Answer | null
   createdAt: string
-  images?: string[]
-  answer?: Answer
 }
 
 export interface Account {
   id: string
-  name: string
   email: string
+  name: string
   phone: string
   marketingConsent: boolean
+  role: "customer" | "admin"
   createdAt: string
 }
 
@@ -71,7 +93,7 @@ export interface Address {
 export type AddressInput = Omit<Address, "id" | "isDefault">
 
 export interface OrderItem {
-  productId: string
+  productId: string | null
   name: string
   price: number
   quantity: number
@@ -84,7 +106,7 @@ export type OrderStatus = "주문 접수" | "결제 완료" | "배송 준비중"
 
 export interface Order {
   id: string
-  userId: string
+  userId: string | null
   items: OrderItem[]
   subtotal: number
   shippingFee: number
@@ -97,4 +119,9 @@ export interface Order {
   address2: string
   memo: string
   createdAt: string
+}
+
+export interface ShopSettings {
+  shippingFee: number
+  freeShippingThreshold: number
 }

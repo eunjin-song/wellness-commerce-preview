@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { useProducts } from "@/lib/hooks"
+import type { Product } from "@/lib/types"
 import ProductCard from "@/components/products/ProductCard"
 
-export default function ProductGrid() {
-  const products = useProducts()
+export default function ProductGrid({ products }: { products: Product[] }) {
   const categories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean)
   const [category, setCategory] = useState<string | null>(null)
   const visible = category ? products.filter((p) => p.category === category) : products

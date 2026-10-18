@@ -3,10 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import type { Product } from "@/lib/mock/products"
-import { useApp } from "@/lib/store/app"
-import { useProductReviews, useReviewTarget, useUser } from "@/lib/hooks"
-import { maskName } from "@/lib/format"
+import type { Product } from "@/lib/types"
+import { useAddReview, useProductReviews, useReviewTarget } from "@/lib/queries/community"
+import { toKoreanError } from "@/lib/db/errors"
 import ImagePicker from "@/components/ui/ImagePicker"
 import PhotoStrip from "@/components/ui/PhotoStrip"
 
@@ -19,18 +18,18 @@ function Stars({ value }: { value: number }) {
   )
 }
 
-const BLOCKED_MESSAGE: Record<"no-purchase" | "not-delivered" | "already", string> = {
+const BLOCKED_MESSAGE = {
   "no-purchase": "이 상품을 구매하신 분만 후기를 남길 수 있어요.",
   "not-delivered": "배송이 완료되면 후기를 남길 수 있어요.",
   already: "이미 후기를 남기셨어요. 소중한 후기 감사합니다.",
-}
+} as const
 
 export default function ReviewSection({ product }: { product: Product }) {
-  const { user } = useUser()
   const pathname = usePathname()
-  const reviews = useProductReviews(product)
+  const reviewsQuery = useProductReviews(product.id)
+  const reviews = reviewsQuery.data ?? []
   const target = useReviewTarget(product.id)
-  const addReview = useApp((s) => s.addReview)
+  const addReview = useAddReview()
 
   const [rating, setRating] = useState(5)
   const [content, setContent] = useState("")
@@ -39,27 +38,29 @@ export default function ReviewSection({ product }: { product: Product }) {
 
   const average = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user || target.state !== "ok") return
+    if (target.state !== "ok") return
     if (!content.trim()) {
       setError("후기 내용을 입력해 주세요.")
       return
     }
-    addReview({
-      productId: product.id,
-      userId: user.id,
-      orderId: target.order.id,
-      author: maskName(user.name),
-      rating,
-      content: content.trim(),
-      option: target.option || undefined,
-      images,
-    })
-    setContent("")
-    setImages([])
-    setRating(5)
     setError(null)
+    try {
+      await addReview.mutateAsync({
+        productId: product.id,
+        orderId: target.order.id,
+        rating,
+        content: content.trim(),
+        option: target.option,
+        images,
+      })
+      setContent("")
+      setImages([])
+      setRating(5)
+    } catch (err) {
+      setError(toKoreanError(err, "후기를 등록하지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
   }
 
   return (
@@ -115,11 +116,11 @@ export default function ReviewSection({ product }: { product: Product }) {
               {error}
             </p>
           )}
-          <button type="submit" className="btn-primary">
-            후기 등록
+          <button type="submit" className="btn-primary" disabled={addReview.isPending}>
+            {addReview.isPending ? "등록 중…" : "후기 등록"}
           </button>
         </form>
-      ) : (
+      ) : target.state === "loading" ? null : (
         <p className="rounded-2xl bg-paper p-6 text-sm">
           {target.state === "login" ? (
             <>
@@ -134,7 +135,9 @@ export default function ReviewSection({ product }: { product: Product }) {
         </p>
       )}
 
-      {reviews.length === 0 ? (
+      {reviewsQuery.isPending ? (
+        <p className="text-sm">후기를 불러오는 중이에요…</p>
+      ) : reviews.length === 0 ? (
         <p className="text-sm">아직 등록된 후기가 없어요.</p>
       ) : (
         <ul className="divide-y divide-brown/20">
@@ -146,7 +149,7 @@ export default function ReviewSection({ product }: { product: Product }) {
               </div>
               {r.option && <p className="mt-2 text-xs">옵션: {r.option}</p>}
               <p className="mt-2 text-sm leading-relaxed">{r.content}</p>
-              {r.images && <PhotoStrip images={r.images} label="후기 사진" />}
+              {r.images.length > 0 && <PhotoStrip images={r.images} label="후기 사진" />}
               <p className="mt-2 text-xs">{r.createdAt}</p>
             </li>
           ))}

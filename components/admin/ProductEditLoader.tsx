@@ -1,13 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { useCatalog } from "@/lib/hooks"
+import { useAdminProducts } from "@/lib/queries/admin"
 import ProductEditor from "@/components/admin/ProductEditor"
 
 export default function ProductEditLoader({ id }: { id: string }) {
-  const catalog = useCatalog()
-  const product = catalog.find((p) => p.id === id)
+  const query = useAdminProducts()
 
+  if (query.isPending) return <p className="text-sm">불러오는 중이에요…</p>
+
+  const product = query.data?.find((p) => p.id === id)
   if (!product) {
     return (
       <p className="text-sm">

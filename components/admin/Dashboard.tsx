@@ -1,22 +1,79 @@
 "use client"
 
 import Link from "next/link"
-import { useApp } from "@/lib/store/app"
-import { useAllReviews, useCatalog, useQuestions } from "@/lib/hooks"
+import { useState } from "react"
+import { useAdminOrders, useAdminProducts, useAdminReviews, useSetShippingSettings } from "@/lib/queries/admin"
+import { useQuestions } from "@/lib/queries/community"
+import { useSettings } from "@/lib/queries/shop"
+import { toKoreanError } from "@/lib/db/errors"
 import { OPEN_ITEMS } from "@/lib/open-items"
 import { won } from "@/lib/format"
 
+/** 배송비 설정: 값은 DB에 저장돼서 코드를 고치지 않고 바꿀 수 있어요. */
+function ShippingSettings() {
+  const settings = useSettings()
+  const save = useSetShippingSettings()
+  const [fee, setFee] = useState(String(settings.shippingFee))
+  const [free, setFree] = useState(String(settings.freeShippingThreshold))
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const feeValue = Number(fee.replace(/,/g, ""))
+    const freeValue = Number(free.replace(/,/g, ""))
+    if (!Number.isInteger(feeValue) || feeValue < 0 || !Number.isInteger(freeValue) || freeValue < 0) {
+      setMessage({ ok: false, text: "금액은 0 이상의 숫자로 입력해 주세요." })
+      return
+    }
+    try {
+      await save.mutateAsync({ fee: feeValue, freeThreshold: freeValue })
+      setMessage({ ok: true, text: "저장했어요. 바로 적용돼요." })
+    } catch (err) {
+      setMessage({ ok: false, text: toKoreanError(err, "저장하지 못했어요.") })
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-2xl bg-paper p-6" noValidate>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="ship-fee" className="field-label">
+            기본 배송비 (원)
+          </label>
+          <input id="ship-fee" inputMode="numeric" className="field tabular-nums" value={fee} onChange={(e) => setFee(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="ship-free" className="field-label">
+            이 금액 이상이면 무료 (원)
+          </label>
+          <input id="ship-free" inputMode="numeric" className="field tabular-nums" value={free} onChange={(e) => setFree(e.target.value)} />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-3">
+        <button type="submit" className="btn-primary" disabled={save.isPending}>
+          {save.isPending ? "저장 중…" : "배송비 저장"}
+        </button>
+        {message && (
+          <span role={message.ok ? "status" : "alert"} className="text-sm font-medium">
+            {message.text}
+          </span>
+        )}
+      </div>
+    </form>
+  )
+}
+
 export default function Dashboard() {
-  const orders = useApp((s) => s.orders)
-  const hiddenReviewIds = useApp((s) => s.hiddenReviewIds)
-  const questions = useQuestions()
-  const catalog = useCatalog()
-  const reviews = useAllReviews()
+  const orders = useAdminOrders().data ?? []
+  const questions = useQuestions().data ?? []
+  const catalog = useAdminProducts().data ?? []
+  const reviews = useAdminReviews().data ?? []
+  const currentSettings = useSettings()
 
   const newOrders = orders.filter((o) => o.status === "주문 접수" || o.status === "결제 완료").length
-  const waitingQna = questions.filter((q) => !q.answer).length
-  const activeProducts = catalog.filter((p) => p.isActive !== false).length
-  const visibleReviews = reviews.filter((r) => !hiddenReviewIds.includes(r.id)).length
+  const waitingQna = questions.filter((q) => !q.isAnswered).length
+  const activeProducts = catalog.filter((p) => p.isActive).length
+  const visibleReviews = reviews.filter((r) => !r.isHidden).length
   const openItems = OPEN_ITEMS.filter((i) => !i.done)
 
   const stats = [
@@ -40,6 +97,13 @@ export default function Dashboard() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="shipping-settings">
+        <h2 id="shipping-settings" className="mb-4 text-sm font-semibold">
+          배송비 설정
+        </h2>
+        <ShippingSettings key={`${currentSettings.shippingFee}:${currentSettings.freeShippingThreshold}`} />
       </section>
 
       <section aria-labelledby="recent-orders">

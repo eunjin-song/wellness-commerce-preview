@@ -3,10 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import type { Product } from "@/lib/mock/products"
+import type { Product } from "@/lib/types"
 import { cartKey, useCartStore } from "@/lib/store/cart"
 import { useCheckout } from "@/lib/store/checkout"
 import { unitPrice } from "@/lib/pricing"
+import { MAX_QUANTITY } from "@/lib/shop"
 import { won } from "@/lib/format"
 import HeartButton from "@/components/products/HeartButton"
 
@@ -15,7 +16,7 @@ type Message = { type: "error" | "added"; text: string }
 const extraText = (extra?: number) => (extra && extra > 0 ? ` (+${won(extra)})` : "")
 
 export default function ProductPurchasePanel({ product }: { product: Product }) {
-  const { id, name, stock, colors, sizes, images } = product
+  const { id, name, inStock, colors, sizes, images } = product
   const router = useRouter()
   const addItem = useCartStore((s) => s.addItem)
   const setCheckoutItems = useCheckout((s) => s.setItems)
@@ -25,16 +26,16 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
   const [quantity, setQuantity] = useState(1)
   const [message, setMessage] = useState<Message | null>(null)
 
-  const soldOut = stock === 0
+  const soldOut = !inStock
   const price = unitPrice(product, color, size)
   const totalPrice = price * quantity
 
   function validate() {
-    if (colors && !color) {
+    if (colors.length > 0 && !color) {
       setMessage({ type: "error", text: "색상을 선택해 주세요." })
       return false
     }
-    if (sizes && !size) {
+    if (sizes.length > 0 && !size) {
       setMessage({ type: "error", text: "사이즈를 선택해 주세요." })
       return false
     }
@@ -47,7 +48,7 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
       name,
       price,
       thumbnailUrl: images[0] ?? null,
-      stock,
+      stock: MAX_QUANTITY,
       quantity,
       color: color ?? undefined,
       size: size ?? undefined,
@@ -69,7 +70,7 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
 
   return (
     <div className="space-y-6">
-      {colors && (
+      {colors.length > 0 && (
         <div>
           <p className="field-label">
             색상 <span className="font-normal">· {color ?? "선택해 주세요"}</span>
@@ -104,7 +105,7 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
         </div>
       )}
 
-      {sizes && (
+      {sizes.length > 0 && (
         <div>
           <p className="field-label">
             사이즈 <span className="font-normal">· {size ?? "선택해 주세요"}</span>
@@ -146,8 +147,8 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
           </span>
           <button
             type="button"
-            onClick={() => setQuantity((q) => Math.min(q + 1, Math.max(stock, 1)))}
-            disabled={soldOut || quantity >= stock}
+            onClick={() => setQuantity((q) => Math.min(q + 1, MAX_QUANTITY))}
+            disabled={soldOut || quantity >= MAX_QUANTITY}
             aria-label="수량 증가"
             className="h-8 w-8 rounded-full text-lg transition hover:bg-paper disabled:opacity-30"
           >
@@ -155,7 +156,6 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
           </button>
         </div>
         {soldOut && <p className="mt-2 text-sm font-medium">일시 품절</p>}
-        {!soldOut && quantity >= stock && <p className="mt-2 text-xs">구매 가능한 최대 수량이에요.</p>}
       </div>
 
       <div className="flex items-center justify-between border-t border-brown/25 pt-4">

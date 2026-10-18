@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import type { Product } from "@/lib/mock/products"
-import { useProductReviews, useQuestions, useUser } from "@/lib/hooks"
+import type { Product } from "@/lib/types"
+import { useUser } from "@/lib/hooks"
+import { useProductReviews, useQuestions } from "@/lib/queries/community"
 import ReviewSection from "@/components/products/ReviewSection"
 import QnaList from "@/components/qna/QnaList"
 import QnaForm from "@/components/qna/QnaForm"
@@ -16,14 +17,14 @@ export default function ProductTabs({ product }: { product: Product }) {
   const [writing, setWriting] = useState(false)
   const { user } = useUser()
   const pathname = usePathname()
-  const reviews = useProductReviews(product)
+  const reviews = useProductReviews(product.id)
   const questions = useQuestions(product.id)
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "detail", label: "상세 정보" },
     { id: "usage", label: "사용 방법" },
-    { id: "reviews", label: `후기 ${reviews.length}` },
-    { id: "qna", label: `Q&A ${questions.length}` },
+    { id: "reviews", label: `후기 ${reviews.data?.length ?? 0}` },
+    { id: "qna", label: `Q&A ${questions.data?.length ?? 0}` },
   ]
 
   return (
@@ -47,8 +48,8 @@ export default function ProductTabs({ product }: { product: Product }) {
       </div>
 
       <div role="tabpanel" id={`panel-${active}`} aria-labelledby={`tab-${active}`} className="py-10 text-sm leading-relaxed">
-        {active === "detail" && <div className="whitespace-pre-line">{product.description}</div>}
-        {active === "usage" && <div className="whitespace-pre-line">{product.usageGuide}</div>}
+        {active === "detail" && <div className="whitespace-pre-line">{product.description || "상세 정보를 준비하고 있어요."}</div>}
+        {active === "usage" && <div className="whitespace-pre-line">{product.usageGuide || "사용 방법을 준비하고 있어요."}</div>}
         {active === "reviews" && <ReviewSection product={product} />}
         {active === "qna" && (
           <div className="space-y-6">
@@ -66,7 +67,7 @@ export default function ProductTabs({ product }: { product: Product }) {
                 ))}
             </div>
             {writing && <QnaForm productId={product.id} onDone={() => setWriting(false)} />}
-            <QnaList questions={questions} />
+            <QnaList questions={questions.data ?? []} loading={questions.isPending} />
           </div>
         )}
       </div>

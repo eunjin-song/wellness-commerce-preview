@@ -31,9 +31,10 @@ export const OPEN_ITEMS: OpenItem[] = [
   {
     id: "shipping-fee",
     title: "배송비 정책",
-    detail: "지금은 임시로 3,000원, 5만 원 이상 무료예요. 제주·도서산간 추가 배송비 여부도 함께 정해야 해요.",
-    checklist: ["기본 배송비 금액", "무료 배송 기준 금액", "제주·도서산간 추가 배송비", "반품·교환 시 배송비 부담"],
-    where: "lib/shop.ts",
+    detail:
+      "지금은 임시로 3,000원, 5만 원 이상 무료예요. 금액은 관리자 대시보드의 '배송비 설정'에서 바로 바꿀 수 있어요. 제주·도서산간 추가 배송비 여부도 함께 정해야 해요.",
+    checklist: ["기본 배송비 금액", "무료 배송 기준 금액", "제주·도서산간 추가 배송비 (지금은 기능 없음)", "반품·교환 시 배송비 부담"],
+    where: "관리자 대시보드 > 배송비 설정 (DB의 shop_settings)",
     requested: true,
   },
   {
@@ -130,19 +131,42 @@ export const OPEN_ITEMS: OpenItem[] = [
     where: "components/auth/SignupForm.tsx, lib/format.ts",
     done: true,
     decision:
-      "아이디는 이메일 / 비밀번호 규칙은 영문+숫자 8자 이상 유지 / 가입 시 이메일 인증을 받아야 가입 완료 / 비밀번호는 이메일로 재설정 링크 발송 (2026-10-19 확정). 인증·재설정 화면은 서버 연결할 때 실제 동작으로 만들어요.",
+      "아이디는 이메일 / 비밀번호 규칙은 영문+숫자 8자 이상 유지 / 가입 시 이메일 인증을 받아야 가입 완료 / 비밀번호는 이메일로 재설정 링크 발송 (2026-10-19 확정). 가입·인증·로그인·비밀번호 찾기·재설정 화면과 이메일 템플릿은 구현 완료, 서버 연결 후 실제 메일로 시험이 필요해요.",
   },
   {
     id: "backend",
-    title: "서버(Supabase) 연결",
+    title: "서버(Supabase) 프로젝트 만들고 연결하기",
     detail:
-      "지금은 회원·주문·후기·Q&A·상품 수정 내용이 접속한 브라우저에만 저장돼요. 정식 오픈 전에 서버를 연결해야 하고, 무료 플랜은 1주일간 접속이 없으면 프로젝트가 일시 정지돼요.",
+      "서버 연결 코드는 완성됐어요. 이제 Supabase 계정에서 프로젝트를 만들고 연결 정보를 사이트에 넣으면 돼요. 무료 플랜은 1주일간 접속이 없으면 프로젝트가 일시 정지돼요.",
+    checklist: [
+      "Supabase 프로젝트 만들기 (지역: 서울) — 계정은 직접 만들어야 해요",
+      "SQL Editor에서 0001_init.sql, seed.sql 실행",
+      "로그인 설정(이메일 인증 켜기, Redirect URLs, 이메일 템플릿 3개)",
+      "Project URL과 Publishable key를 .env.local과 Vercel 환경 변수에 넣기",
+      "내 이메일로 가입 후 SQL로 관리자 지정",
+      "가입 → 상품 → 주문 → 후기 → Q&A 전체 흐름 시험",
+    ],
+    where: "supabase/README.md",
   },
   {
-    id: "admin-auth",
-    title: "관리자 권한 방식",
-    detail: "지금은 admin@ooro.store 이메일이면 관리자로 인식하는 임시 방식이에요. 서버 연결 시 계정별 권한으로 교체해야 해요.",
-    where: "lib/shop.ts",
+    id: "data-retention",
+    title: "탈퇴·개인정보 보관 기간 정책",
+    detail:
+      "지금은 회원이 탈퇴하면 로그인 정보·배송지·찜은 삭제하고, 주문 기록은 남기되 회원 연결(user_id)만 끊어요. 주문·결제·배송 기록을 법적으로 몇 년 보관해야 하는지 확인하고, 개인정보처리방침에 적어야 해요.",
+    checklist: ["전자상거래법 등 주문·결제·분쟁 기록 법정 보관 기간 확인", "보관 중인 주문 기록의 수령인 정보(이름·주소·전화) 파기 시점", "개인정보처리방침에 보관 항목과 기간 명시"],
+    where: "supabase/migrations/0001_init.sql (orders.user_id on delete set null)",
+  },
+  {
+    id: "stock-timing",
+    title: "재고 차감 시점",
+    detail:
+      "지금은 주문할 때 재고가 충분한지 확인만 하고 숫자를 줄이지는 않아요(결제가 없는 테스트 주문이라서요). 실제 결제를 붙이면 '결제 완료' 때 차감하고 '취소' 때 되돌리는 방식으로 만들어야 해요.",
+    where: "place_order 함수 (0001_init.sql)",
+  },
+  {
+    id: "backup",
+    title: "데이터 백업·복구",
+    detail: "무료 플랜에서 백업이 어디까지 되는지 확인이 필요해요. 주문 데이터가 쌓이기 시작하면 정기 백업 방법을 정해야 해요.",
   },
   {
     id: "payment",
@@ -163,6 +187,14 @@ export const OPEN_ITEMS: OpenItem[] = [
     id: "real-content",
     title: "실제 상품 사진·상품 정보",
     detail: "지금 상품은 샘플이고 사진도 임의 이미지예요. 관리자 > 상품에서 실제 상품으로 교체해 주세요.",
+  },
+  {
+    id: "admin-auth",
+    title: "관리자 권한 방식",
+    detail: "관리자는 DB의 회원 정보(profiles.role)로 정해요. 화면에서 바꿀 수 없고 SQL로만 지정해서, 누구도 스스로 관리자가 될 수 없어요.",
+    where: "supabase/migrations/0001_init.sql, supabase/README.md",
+    done: true,
+    decision: "DB의 role 컬럼 + 보안 규칙(RLS)으로 확정 (2026-10-19). 동업자를 관리자로 추가할 때는 SQL로 role을 바꿔요.",
   },
   {
     id: "login-session",

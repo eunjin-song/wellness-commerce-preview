@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import AuthNotice from "@/components/layout/AuthNotice";
+import Providers from "@/components/providers/Providers";
 import ComingSoon from "@/components/ComingSoon";
 import { isComingSoon } from "@/lib/site";
 
@@ -39,11 +42,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {isComingSoon ? (
           <ComingSoon />
         ) : (
-          <>
+          <Providers>
+            <Suspense fallback={null}>
+              <AuthNotice />
+            </Suspense>
             <Header />
             <div className="flex-1">{children}</div>
             <Footer />
-          </>
+          </Providers>
         )}
       </body>
     </html>

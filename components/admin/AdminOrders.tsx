@@ -1,20 +1,32 @@
 "use client"
 
 import { useState } from "react"
-import { useApp } from "@/lib/store/app"
+import { useAdminOrders, useSetOrderStatus } from "@/lib/queries/admin"
+import { toKoreanError } from "@/lib/db/errors"
 import { optionLabel } from "@/lib/store/cart"
 import { ORDER_STATUSES } from "@/lib/shop"
 import { won } from "@/lib/format"
 import type { OrderStatus } from "@/lib/types"
 
 export default function AdminOrders() {
-  const orders = useApp((s) => s.orders)
-  const accounts = useApp((s) => s.accounts)
-  const setOrderStatus = useApp((s) => s.setOrderStatus)
+  const query = useAdminOrders()
+  const setStatus = useSetOrderStatus()
+  const orders = query.data ?? []
   const [filter, setFilter] = useState<OrderStatus | "all">("all")
+  const [error, setError] = useState<string | null>(null)
 
   const visible = filter === "all" ? orders : orders.filter((o) => o.status === filter)
-  const nameOf = (userId: string) => accounts.find((a) => a.id === userId)?.name ?? "탈퇴 회원"
+
+  async function handleChange(id: string, status: OrderStatus) {
+    setError(null)
+    try {
+      await setStatus.mutateAsync({ id, status })
+    } catch (err) {
+      setError(toKoreanError(err, "상태를 바꾸지 못했어요."))
+    }
+  }
+
+  if (query.isPending) return <p className="py-10 text-center text-sm">불러오는 중이에요…</p>
 
   return (
     <div className="space-y-6">
@@ -29,6 +41,12 @@ export default function AdminOrders() {
         ))}
       </div>
 
+      {error && (
+        <p role="alert" className="field-error">
+          {error}
+        </p>
+      )}
+
       {visible.length === 0 ? (
         <p className="py-10 text-center text-sm">해당하는 주문이 없어요.</p>
       ) : (
@@ -39,7 +57,8 @@ export default function AdminOrders() {
                 <p>
                   <span className="font-medium">{o.id}</span>
                   <span className="ml-2 text-xs">
-                    {o.createdAt} · {nameOf(o.userId)}
+                    {o.createdAt}
+                    {o.userId === null && " · 탈퇴 회원"}
                   </span>
                 </p>
                 <div className="flex items-center gap-2">
@@ -50,7 +69,8 @@ export default function AdminOrders() {
                     id={`status-${o.id}`}
                     className="field w-auto py-2"
                     value={o.status}
-                    onChange={(e) => setOrderStatus(o.id, e.target.value as OrderStatus)}
+                    disabled={setStatus.isPending}
+                    onChange={(e) => handleChange(o.id, e.target.value as OrderStatus)}
                   >
                     {ORDER_STATUSES.map((s) => (
                       <option key={s} value={s}>
