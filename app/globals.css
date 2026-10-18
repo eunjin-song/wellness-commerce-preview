@@ -1,41 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --color-cream: #f8f5ef;
-  --color-cream-dark: #efe9dd;
-  --color-sage-50: #f1f4ee;
-  --color-sage-200: #c9d4c0;
-  --color-sage-400: #8a9a7e;
-  --color-sage-600: #5e6e52;
-  --color-sage-900: #333b2c;
-  --color-ink: #2b2a26;
-  --color-brand: #8b6f5c;
-  --color-brand-reverse: #f6eee5;
-}
-
-@theme inline {
-  --color-cream: var(--color-cream);
-  --color-cream-dark: var(--color-cream-dark);
-  --color-sage-50: var(--color-sage-50);
-  --color-sage-200: var(--color-sage-200);
-  --color-sage-400: var(--color-sage-400);
-  --color-sage-600: var(--color-sage-600);
-  --color-sage-900: var(--color-sage-900);
-  --color-ink: var(--color-ink);
-  --color-brand: var(--color-brand);
-  --color-brand-reverse: var(--color-brand-reverse);
+/*
+  ooro. 브랜드 컬러 — 이 3색만 사용합니다.
+  cream  PANTONE 11-0608 TCX (Coconut Milk)  페이지 배경
+  brown  PANTONE 7531 C                      글자 · 로고 · 버튼 · 선
+  paper  위 두 색과 어울리는 따뜻한 화이트     카드 · 입력창 · 버튼 위 글자
+  (팬톤 → HEX는 화면용 근사값입니다)
+*/
+@theme {
+  --color-cream: #f1eee6;
+  --color-brown: #7a6855;
+  --color-paper: #fcfbf8;
 
   --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Malgun Gothic", sans-serif;
-  --font-logo: var(--font-pacifico), "Pacifico", cursive;
 
   --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {
   background: var(--color-cream);
-  color: var(--color-ink);
+  color: var(--color-brown);
   font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brown);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-brown);
+  color: var(--color-paper);
 }
 
 @keyframes coming-soon-fade {

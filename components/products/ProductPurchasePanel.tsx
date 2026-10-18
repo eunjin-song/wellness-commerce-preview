@@ -35,12 +35,12 @@ export default function ProductPurchasePanel({ productId, name, price, stock, th
 
   return (
     <div className="space-y-5">
-      <div className="flex w-fit items-center justify-between rounded-full border border-sage-200 px-4 py-2">
+      <div className="flex w-fit items-center justify-between rounded-full border border-brown/25 px-4 py-2">
         <button
           onClick={dec}
           disabled={quantity <= 1}
           aria-label="수량 감소"
-          className="h-8 w-8 rounded-full text-lg text-ink/70 transition hover:bg-sage-50 disabled:opacity-30"
+          className="h-8 w-8 rounded-full text-lg text-brown transition hover:bg-paper disabled:opacity-30"
         >
           −
         </button>
@@ -49,17 +49,17 @@ export default function ProductPurchasePanel({ productId, name, price, stock, th
           onClick={inc}
           disabled={quantity >= stock}
           aria-label="수량 증가"
-          className="h-8 w-8 rounded-full text-lg text-ink/70 transition hover:bg-sage-50 disabled:opacity-30"
+          className="h-8 w-8 rounded-full text-lg text-brown transition hover:bg-paper disabled:opacity-30"
         >
           +
         </button>
       </div>
 
-      <p className="text-sm text-ink/50">{stock > 0 ? `재고 ${stock}개` : "일시 품절"}</p>
+      <p className="text-sm text-brown">{stock > 0 ? `재고 ${stock}개` : "일시 품절"}</p>
 
-      <div className="flex items-center justify-between border-t border-sage-200 pt-4">
-        <span className="text-sm text-ink/60">총 상품 금액</span>
-        <span className="font-sans text-xl font-semibold text-ink">
+      <div className="flex items-center justify-between border-t border-brown/25 pt-4">
+        <span className="text-sm text-brown">총 상품 금액</span>
+        <span className="font-sans text-xl font-semibold text-brown">
           {totalPrice.toLocaleString("ko-KR")}원
         </span>
       </div>
@@ -68,16 +68,16 @@ export default function ProductPurchasePanel({ productId, name, price, stock, th
         <button
           onClick={handleAddToCart}
           disabled={stock === 0}
-          className="rounded-full border border-sage-400 py-3.5 text-sm font-medium text-sage-600
-                     transition duration-300 ease-gentle hover:bg-sage-50 disabled:opacity-40"
+          className="rounded-full border border-brown py-3.5 text-sm font-medium text-brown
+                     transition duration-300 ease-gentle hover:bg-paper disabled:opacity-40"
         >
           {justAdded ? "담았어요" : "장바구니 담기"}
         </button>
         <button
           onClick={handleBuyNow}
           disabled={stock === 0}
-          className="rounded-full bg-sage-400 py-3.5 text-sm font-medium text-white
-                     transition duration-300 ease-gentle hover:bg-sage-600 disabled:opacity-40"
+          className="rounded-full bg-brown py-3.5 text-sm font-medium text-paper
+                     transition duration-300 ease-gentle hover:bg-brown/85 disabled:opacity-40"
         >
           바로 구매하기
         </button>

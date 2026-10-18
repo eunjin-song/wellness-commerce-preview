@@ -18,23 +18,23 @@ export default function ProductTabs({
 
   return (
     <div>
-      <div className="flex gap-8 border-b border-sage-200">
+      <div className="flex gap-8 border-b border-brown/25">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActive(tab)}
             className={`relative pb-4 text-sm transition-colors
-              ${active === tab ? "font-medium text-ink" : "text-ink/40 hover:text-ink/70"}`}
+              ${active === tab ? "font-medium text-brown" : "text-brown hover:underline"}`}
           >
             {tab}
             {active === tab && (
-              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-sage-400" />
+              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brown" />
             )}
           </button>
         ))}
       </div>
 
-      <div className="py-10 font-sans text-sm leading-relaxed text-ink/70">
+      <div className="py-10 font-sans text-sm leading-relaxed text-brown">
         {active === "상세 정보" && <div className="whitespace-pre-line">{description}</div>}
         {active === "사용 방법" && <div className="whitespace-pre-line">{usageGuide}</div>}
         {active === "구매 후기/Q&A" && <ReviewsSection initialReviews={reviews} />}
@@ -67,8 +67,8 @@ function ReviewsSection({ initialReviews }: { initialReviews: MockReview[] }) {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="rounded-2xl bg-sage-50 p-6">
-        <p className="text-sm font-medium text-sage-900">구매하신 상품은 어떠셨나요?</p>
+      <form onSubmit={handleSubmit} className="rounded-2xl bg-paper p-6">
+        <p className="text-sm font-medium text-brown">구매하신 상품은 어떠셨나요?</p>
 
         <div className="mt-3 flex gap-1">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -77,7 +77,7 @@ function ReviewsSection({ initialReviews }: { initialReviews: MockReview[] }) {
               type="button"
               onClick={() => setRating(n)}
               aria-label={`${n}점`}
-              className={`text-2xl leading-none ${n <= rating ? "text-sage-400" : "text-ink/20"}`}
+              className={`text-2xl leading-none ${n <= rating ? "text-brown" : "text-brown/30"}`}
             >
               ★
             </button>
@@ -89,34 +89,34 @@ function ReviewsSection({ initialReviews }: { initialReviews: MockReview[] }) {
           onChange={(e) => setContent(e.target.value)}
           rows={3}
           placeholder="솔직한 사용 후기를 남겨주세요."
-          className="mt-3 w-full resize-none rounded-xl border border-sage-200 bg-white px-4 py-3 text-sm outline-none
-                     transition focus:border-sage-400 focus:ring-1 focus:ring-sage-400"
+          className="mt-3 w-full resize-none rounded-xl border border-brown/25 bg-paper px-4 py-3 text-sm outline-none
+                     transition focus:border-brown focus:ring-1 focus:ring-brown"
         />
 
         <button
           type="submit"
-          className="mt-3 rounded-full bg-sage-400 px-6 py-2.5 text-sm font-medium text-white
-                     transition duration-300 ease-gentle hover:bg-sage-600"
+          className="mt-3 rounded-full bg-brown px-6 py-2.5 text-sm font-medium text-paper
+                     transition duration-300 ease-gentle hover:bg-brown/85"
         >
           후기 등록
         </button>
       </form>
 
       {reviews.length === 0 ? (
-        <p className="text-ink/40">아직 등록된 후기가 없습니다.</p>
+        <p className="text-brown">아직 등록된 후기가 없습니다.</p>
       ) : (
-        <ul className="divide-y divide-sage-200">
+        <ul className="divide-y divide-brown/20">
           {reviews.map((r) => (
             <li key={r.id} className="py-6 first:pt-0">
               <div className="flex items-center justify-between">
-                <div className="flex gap-0.5 text-sage-400">
+                <div className="flex gap-0.5 text-brown">
                   <span>{"★".repeat(r.rating)}</span>
-                  <span className="text-ink/15">{"★".repeat(5 - r.rating)}</span>
+                  <span className="text-brown/25">{"★".repeat(5 - r.rating)}</span>
                 </div>
-                <span className="text-xs text-ink/30">{r.author}</span>
+                <span className="text-xs text-brown">{r.author}</span>
               </div>
-              <p className="mt-2 text-ink/70">{r.content}</p>
-              <p className="mt-2 text-xs text-ink/30">{r.createdAt}</p>
+              <p className="mt-2 text-brown">{r.content}</p>
+              <p className="mt-2 text-xs text-brown">{r.createdAt}</p>
             </li>
           ))}
         </ul>
