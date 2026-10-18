@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { Question } from "@/lib/types"
 import { useUser } from "@/lib/hooks"
+import PhotoStrip from "@/components/ui/PhotoStrip"
 
 interface Props {
   questions: Question[]
@@ -63,6 +64,7 @@ export default function QnaList({ questions, productNames }: Props) {
                 {canView ? (
                   <>
                     <p className="whitespace-pre-line leading-relaxed">{q.content}</p>
+                    {q.images && q.images.length > 0 && <PhotoStrip images={q.images} label="첨부 사진" />}
                     {q.answer ? (
                       <div className="rounded-2xl bg-paper p-5">
                         <p className="text-xs font-medium">ooro. 답변 · {q.answer.createdAt}</p>

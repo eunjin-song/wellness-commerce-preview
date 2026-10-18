@@ -1,11 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import type { Product } from "@/lib/mock/products"
+import { useProducts } from "@/lib/hooks"
 import ProductCard from "@/components/products/ProductCard"
 
-export default function ProductGrid({ products }: { products: Product[] }) {
-  const categories = Array.from(new Set(products.map((p) => p.category)))
+export default function ProductGrid() {
+  const products = useProducts()
+  const categories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean)
   const [category, setCategory] = useState<string | null>(null)
   const visible = category ? products.filter((p) => p.category === category) : products
 
@@ -22,11 +23,15 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         ))}
       </div>
 
-      <div className="mt-10 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        <p className="mt-16 text-center text-sm">등록된 상품이 없어요.</p>
+      ) : (
+        <div className="mt-10 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

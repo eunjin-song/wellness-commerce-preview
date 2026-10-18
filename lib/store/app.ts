@@ -1,7 +1,19 @@
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
-import type { Account, Address, AddressInput, Order, OrderItem, Question, Review } from "@/lib/types"
+import { createJSONStorage, persist } from "zustand/middleware"
+import type {
+  Account,
+  Address,
+  AddressInput,
+  Answer,
+  Order,
+  OrderItem,
+  OrderStatus,
+  Question,
+  Review,
+} from "@/lib/types"
+import { PRODUCTS, type Product } from "@/lib/mock/products"
 import { orderNumber, today, uid } from "@/lib/format"
+import { safeLocalStorage } from "@/lib/store/safeStorage"
 
 type Result = { ok: true } | { ok: false; error: string }
 
@@ -30,10 +42,17 @@ interface AppState {
   reviews: Review[]
   questions: Question[]
 
+  // 관리자가 바꾼 내용 (샘플 데이터 위에 덧씌워집니다)
+  productOverrides: Record<string, Product>
+  customProducts: Product[]
+  answers: Record<string, Answer>
+  hiddenReviewIds: string[]
+
   signup: (input: { name: string; email: string; phone: string; marketingConsent: boolean }) => Result
   login: (email: string) => Result
   logout: () => void
   updateProfile: (patch: Partial<Pick<Account, "name" | "phone" | "marketingConsent">>) => void
+  changeEmail: (email: string) => Result
   deleteAccount: () => void
 
   toggleWish: (userId: string, productId: string) => void
@@ -46,6 +65,13 @@ interface AppState {
   placeOrder: (userId: string, input: PlaceOrderInput) => Order
   addReview: (review: Omit<Review, "id" | "createdAt">) => void
   addQuestion: (question: Omit<Question, "id" | "createdAt" | "answer">) => void
+
+  // 관리자
+  saveProduct: (product: Product) => void
+  removeCustomProduct: (id: string) => void
+  setOrderStatus: (orderId: string, status: OrderStatus) => void
+  answerQuestion: (questionId: string, content: string) => void
+  toggleReviewHidden: (id: string) => void
 }
 
 export const useApp = create<AppState>()(
@@ -58,6 +84,10 @@ export const useApp = create<AppState>()(
       orders: [],
       reviews: [],
       questions: [],
+      productOverrides: {},
+      customProducts: [],
+      answers: {},
+      hiddenReviewIds: [],
 
       // 미리보기 단계라 비밀번호는 저장·검증하지 않습니다. 실제 서비스에서는 Supabase Auth로 대체됩니다.
       signup: ({ name, email, phone, marketingConsent }) => {
@@ -90,6 +120,18 @@ export const useApp = create<AppState>()(
         set((s) => ({
           accounts: s.accounts.map((a) => (a.id === s.sessionUserId ? { ...a, ...patch } : a)),
         })),
+
+      changeEmail: (email) => {
+        const normalized = email.trim().toLowerCase()
+        const { accounts, sessionUserId } = get()
+        if (accounts.some((a) => a.email === normalized && a.id !== sessionUserId)) {
+          return { ok: false, error: "이미 가입된 이메일이에요." }
+        }
+        set((s) => ({
+          accounts: s.accounts.map((a) => (a.id === s.sessionUserId ? { ...a, email: normalized } : a)),
+        }))
+        return { ok: true }
+      },
 
       deleteAccount: () =>
         set((s) => {
@@ -170,10 +212,39 @@ export const useApp = create<AppState>()(
 
       addQuestion: (question) =>
         set((s) => ({ questions: [{ ...question, id: uid(), createdAt: today() }, ...s.questions] })),
+
+      saveProduct: (product) =>
+        set((s) => {
+          if (PRODUCTS.some((p) => p.id === product.id)) {
+            return { productOverrides: { ...s.productOverrides, [product.id]: product } }
+          }
+          const exists = s.customProducts.some((p) => p.id === product.id)
+          return {
+            customProducts: exists
+              ? s.customProducts.map((p) => (p.id === product.id ? product : p))
+              : [...s.customProducts, product],
+          }
+        }),
+
+      removeCustomProduct: (id) => set((s) => ({ customProducts: s.customProducts.filter((p) => p.id !== id) })),
+
+      setOrderStatus: (orderId, status) =>
+        set((s) => ({ orders: s.orders.map((o) => (o.id === orderId ? { ...o, status } : o)) })),
+
+      answerQuestion: (questionId, content) =>
+        set((s) => ({ answers: { ...s.answers, [questionId]: { content, createdAt: today() } } })),
+
+      toggleReviewHidden: (id) =>
+        set((s) => ({
+          hiddenReviewIds: s.hiddenReviewIds.includes(id)
+            ? s.hiddenReviewIds.filter((x) => x !== id)
+            : [...s.hiddenReviewIds, id],
+        })),
     }),
     {
       name: "ooro-app",
       version: 1,
+      storage: createJSONStorage(() => safeLocalStorage),
     }
   )
 )

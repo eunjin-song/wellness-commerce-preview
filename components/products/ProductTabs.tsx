@@ -28,7 +28,7 @@ export default function ProductTabs({ product }: { product: Product }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="상품 정보" className="flex gap-6 overflow-x-auto border-b border-brown/25 sm:gap-8">
+      <div role="tablist" aria-label="상품 정보" className="flex gap-6 overflow-x-auto overflow-y-hidden border-b border-brown/25 sm:gap-8">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -41,7 +41,7 @@ export default function ProductTabs({ product }: { product: Product }) {
             className={`relative shrink-0 pb-4 text-sm ${active === tab.id ? "font-semibold" : ""}`}
           >
             {tab.label}
-            {active === tab.id && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brown" />}
+            {active === tab.id && <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-brown" />}
           </button>
         ))}
       </div>

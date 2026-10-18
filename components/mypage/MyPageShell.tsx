@@ -22,7 +22,7 @@ export default function MyPageShell({ children }: { children: React.ReactNode })
       <h1 className="font-display text-3xl">마이페이지</h1>
       <p className="mt-2 text-sm">{user.name}님, 안녕하세요.</p>
 
-      <nav aria-label="마이페이지 메뉴" className="mt-8 flex gap-6 overflow-x-auto border-b border-brown/25 text-sm">
+      <nav aria-label="마이페이지 메뉴" className="mt-8 flex gap-6 overflow-x-auto overflow-y-hidden border-b border-brown/25 text-sm">
         {TABS.map((tab) => {
           const active = pathname === tab.href
           return (
@@ -33,7 +33,7 @@ export default function MyPageShell({ children }: { children: React.ReactNode })
               className={`relative shrink-0 pb-3 ${active ? "font-semibold" : ""}`}
             >
               {tab.label}
-              {active && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brown" />}
+              {active && <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-brown" />}
             </Link>
           )
         })}

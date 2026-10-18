@@ -2,19 +2,18 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { PRODUCTS } from "@/lib/mock/products"
-import { useQuestions, useUser } from "@/lib/hooks"
+import { useCatalog, useQuestions, useUser } from "@/lib/hooks"
 import QnaForm from "@/components/qna/QnaForm"
 import QnaList from "@/components/qna/QnaList"
 
 type StatusFilter = "all" | "waiting" | "done"
 
-const PRODUCT_LIST = PRODUCTS.map((p) => ({ id: p.id, name: p.name }))
-const PRODUCT_NAMES = Object.fromEntries(PRODUCT_LIST.map((p) => [p.id, p.name]))
-
 export default function QnaBoard() {
   const { user } = useUser()
   const all = useQuestions()
+  const catalog = useCatalog()
+  const PRODUCT_LIST = catalog.filter((p) => p.isActive !== false).map((p) => ({ id: p.id, name: p.name }))
+  const PRODUCT_NAMES = Object.fromEntries(catalog.map((p) => [p.id, p.name]))
   const [status, setStatus] = useState<StatusFilter>("all")
   const [target, setTarget] = useState<string>("all")
   const [writing, setWriting] = useState(false)

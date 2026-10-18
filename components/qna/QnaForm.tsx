@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useApp } from "@/lib/store/app"
 import { useUser } from "@/lib/hooks"
 import { maskName } from "@/lib/format"
+import ImagePicker from "@/components/ui/ImagePicker"
 
 interface Props {
   /** 고정된 상품 (상품 상세 페이지에서 사용) */
@@ -20,6 +21,7 @@ export default function QnaForm({ productId, products, onDone }: Props) {
   const [target, setTarget] = useState<string>(productId ?? "")
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
+  const [images, setImages] = useState<string[]>([])
   const [isSecret, setIsSecret] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,6 +39,7 @@ export default function QnaForm({ productId, products, onDone }: Props) {
       title: title.trim(),
       content: content.trim(),
       isSecret,
+      images,
     })
     onDone()
   }
@@ -86,6 +89,8 @@ export default function QnaForm({ productId, products, onDone }: Props) {
           placeholder="자세히 적어주실수록 정확하게 답변드릴 수 있어요."
         />
       </div>
+
+      <ImagePicker value={images} onChange={setImages} max={3} label="사진 첨부" />
 
       <label className="flex items-center gap-2 text-sm">
         <input

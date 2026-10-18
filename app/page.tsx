@@ -1,11 +1,8 @@
 import Image from "next/image"
 import Link from "next/link"
-import { PRODUCTS } from "@/lib/mock/products"
-import ProductCard from "@/components/products/ProductCard"
+import FeaturedProducts from "@/components/products/FeaturedProducts"
 
 export default function HomePage() {
-  const featured = PRODUCTS.filter((p) => p.stock > 0).slice(0, 3)
-
   return (
     <main>
       <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-32">
@@ -44,12 +41,7 @@ export default function HomePage() {
             전체 보기
           </Link>
         </div>
-
-        <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3">
-          {featured.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <FeaturedProducts />
       </section>
     </main>
   )

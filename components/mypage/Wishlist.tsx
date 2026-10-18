@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { PRODUCTS } from "@/lib/mock/products"
 import { useApp } from "@/lib/store/app"
-import { useUser } from "@/lib/hooks"
+import { useProducts, useUser } from "@/lib/hooks"
 import ProductCard from "@/components/products/ProductCard"
 
 const EMPTY: string[] = []
@@ -11,7 +10,8 @@ const EMPTY: string[] = []
 export default function Wishlist() {
   const { user } = useUser()
   const ids = useApp((s) => (user ? (s.wishlist[user.id] ?? EMPTY) : EMPTY))
-  const products = ids.map((id) => PRODUCTS.find((p) => p.id === id)).filter((p) => p !== undefined)
+  const catalog = useProducts()
+  const products = ids.map((id) => catalog.find((p) => p.id === id)).filter((p) => p !== undefined)
 
   if (products.length === 0) {
     return (

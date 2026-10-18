@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/lib/mock/products"
+import { hasPriceVariation } from "@/lib/pricing"
 import { won } from "@/lib/format"
 import HeartButton from "@/components/products/HeartButton"
 
@@ -28,7 +29,10 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className="mt-1 text-xs">{product.subtitle}</p>
 
         <div className="mt-2 flex items-center justify-between">
-          <p className="text-sm">{won(product.price)}</p>
+          <p className="text-sm">
+            {won(product.price)}
+            {hasPriceVariation(product) && "~"}
+          </p>
           {product.colors && (
             <span className="flex gap-1" aria-label={`색상 ${product.colors.map((c) => c.name).join(", ")}`}>
               {product.colors.map((c) => (

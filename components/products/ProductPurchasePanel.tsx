@@ -6,13 +6,16 @@ import { useRouter } from "next/navigation"
 import type { Product } from "@/lib/mock/products"
 import { cartKey, useCartStore } from "@/lib/store/cart"
 import { useCheckout } from "@/lib/store/checkout"
+import { unitPrice } from "@/lib/pricing"
 import { won } from "@/lib/format"
 import HeartButton from "@/components/products/HeartButton"
 
 type Message = { type: "error" | "added"; text: string }
 
+const extraText = (extra?: number) => (extra && extra > 0 ? ` (+${won(extra)})` : "")
+
 export default function ProductPurchasePanel({ product }: { product: Product }) {
-  const { id, name, price, stock, colors, sizes, images } = product
+  const { id, name, stock, colors, sizes, images } = product
   const router = useRouter()
   const addItem = useCartStore((s) => s.addItem)
   const setCheckoutItems = useCheckout((s) => s.setItems)
@@ -23,6 +26,7 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
   const [message, setMessage] = useState<Message | null>(null)
 
   const soldOut = stock === 0
+  const price = unitPrice(product, color, size)
   const totalPrice = price * quantity
 
   function validate() {
@@ -42,7 +46,7 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
       productId: id,
       name,
       price,
-      thumbnailUrl: images[0],
+      thumbnailUrl: images[0] ?? null,
       stock,
       quantity,
       color: color ?? undefined,
@@ -76,8 +80,8 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
                 key={c.name}
                 type="button"
                 aria-pressed={color === c.name}
-                aria-label={c.name}
-                title={c.name}
+                aria-label={`${c.name}${extraText(c.extra)}`}
+                title={`${c.name}${extraText(c.extra)}`}
                 onClick={() => {
                   setColor(c.name)
                   setMessage(null)
@@ -89,6 +93,14 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
               />
             ))}
           </div>
+          {colors.some((c) => (c.extra ?? 0) > 0) && (
+            <p className="mt-2 text-xs">
+              {colors
+                .filter((c) => (c.extra ?? 0) > 0)
+                .map((c) => `${c.name}${extraText(c.extra)}`)
+                .join(", ")}
+            </p>
+          )}
         </div>
       )}
 
@@ -100,16 +112,17 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
           <div className="flex flex-wrap gap-2" role="group" aria-label="사이즈 선택">
             {sizes.map((s) => (
               <button
-                key={s}
+                key={s.name}
                 type="button"
                 className="chip min-w-14"
-                aria-pressed={size === s}
+                aria-pressed={size === s.name}
                 onClick={() => {
-                  setSize(s)
+                  setSize(s.name)
                   setMessage(null)
                 }}
               >
-                {s}
+                {s.name}
+                {extraText(s.extra)}
               </button>
             ))}
           </div>
@@ -133,15 +146,16 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
           </span>
           <button
             type="button"
-            onClick={() => setQuantity((q) => Math.min(q + 1, stock))}
-            disabled={quantity >= stock}
+            onClick={() => setQuantity((q) => Math.min(q + 1, Math.max(stock, 1)))}
+            disabled={soldOut || quantity >= stock}
             aria-label="수량 증가"
             className="h-8 w-8 rounded-full text-lg transition hover:bg-paper disabled:opacity-30"
           >
             +
           </button>
         </div>
-        <p className="mt-2 text-sm">{soldOut ? "일시 품절" : `재고 ${stock}개`}</p>
+        {soldOut && <p className="mt-2 text-sm font-medium">일시 품절</p>}
+        {!soldOut && quantity >= stock && <p className="mt-2 text-xs">구매 가능한 최대 수량이에요.</p>}
       </div>
 
       <div className="flex items-center justify-between border-t border-brown/25 pt-4">

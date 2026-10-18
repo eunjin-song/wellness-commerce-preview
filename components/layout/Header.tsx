@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import Logo from "@/components/Logo"
 import { useCartStore } from "@/lib/store/cart"
-import { useUser } from "@/lib/hooks"
+import { useIsAdmin, useUser } from "@/lib/hooks"
 
 const NAV = [
   { href: "/about", label: "브랜드 이야기" },
@@ -17,6 +17,7 @@ export default function Header() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const { hydrated, user } = useUser()
+  const isAdmin = useIsAdmin()
   const count = useCartStore((state) => state.items.reduce((sum, i) => sum + i.quantity, 0))
 
   const linkClass = (href: string) =>
@@ -38,6 +39,11 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-5 text-sm">
+          {isAdmin && (
+            <Link href="/admin" className={`hidden md:inline ${linkClass("/admin")}`}>
+              관리자
+            </Link>
+          )}
           <Link
             href={hydrated && user ? "/mypage" : "/login"}
             className={linkClass(hydrated && user ? "/mypage" : "/login")}
@@ -77,6 +83,13 @@ export default function Header() {
                 </Link>
               </li>
             ))}
+            {isAdmin && (
+              <li>
+                <Link href="/admin" className="block py-2.5" onClick={() => setMenuOpen(false)}>
+                  관리자
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       )}

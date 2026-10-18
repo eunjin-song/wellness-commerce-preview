@@ -1,6 +1,14 @@
 export interface ColorOption {
   name: string
   hex: string
+  /** 이 색상을 고르면 기본 가격에 더해지는 금액 */
+  extra?: number
+}
+
+export interface SizeOption {
+  name: string
+  /** 이 사이즈를 고르면 기본 가격에 더해지는 금액 */
+  extra?: number
 }
 
 export interface SeedReview {
@@ -10,11 +18,15 @@ export interface SeedReview {
   author: string
   createdAt: string
   option?: string
+  /** 후기 사진 (data URL) */
+  images?: string[]
 }
 
 export interface Review extends SeedReview {
   productId: string
   userId?: string
+  /** 후기를 쓴 근거가 된 주문 (구매자 확인용) */
+  orderId?: string
 }
 
 export interface Answer {
@@ -32,6 +44,7 @@ export interface Question {
   content: string
   isSecret: boolean
   createdAt: string
+  images?: string[]
   answer?: Answer
 }
 

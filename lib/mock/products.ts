@@ -1,17 +1,21 @@
-import type { ColorOption, SeedReview } from "@/lib/types"
+import type { ColorOption, SeedReview, SizeOption } from "@/lib/types"
 
 export interface Product {
   id: string
   name: string
   subtitle: string
   category: string
+  /** 기본 가격. 옵션을 고르면 옵션의 추가 금액이 더해집니다. */
   price: number
+  /** 관리자만 보는 값. 고객 화면에는 숫자를 보여주지 않습니다. */
   stock: number
+  /** false면 고객 화면에서 숨김 (판매 중지) */
+  isActive?: boolean
   images: string[]
   /** 색상 옵션이 있는 상품만 */
   colors?: ColorOption[]
   /** 사이즈 옵션이 있는 상품만 */
-  sizes?: string[]
+  sizes?: SizeOption[]
   ingredients: string
   usageGuide: string
   description: string
@@ -59,7 +63,7 @@ export const PRODUCTS: Product[] = [
     price: 58000,
     stock: 6,
     images: [img("wellness-ampoule-1"), img("wellness-ampoule-2")],
-    sizes: ["30ml", "50ml"],
+    sizes: [{ name: "30ml" }, { name: "50ml", extra: 24000 }],
     ingredients: "저분자 콜라겐, 판테놀, 병풀 추출물이 피부 결을 정돈하고 수분 장벽을 채워줍니다.",
     usageGuide: "세안 후 토너 다음 단계에서 2~3펌프를 덜어 얼굴 전체에 부드럽게 펴 발라주세요.",
     description:
@@ -129,9 +133,9 @@ export const PRODUCTS: Product[] = [
     colors: [
       { name: "아이보리", hex: "#EDE6D8" },
       { name: "모카", hex: "#9A8068" },
-      { name: "차콜", hex: "#4A4743" },
+      { name: "차콜", hex: "#4A4743", extra: 10000 },
     ],
-    sizes: ["S", "M", "L"],
+    sizes: [{ name: "S" }, { name: "M" }, { name: "L" }],
     ingredients: "프랑스산 린넨 100%. 세탁을 거듭할수록 부드러워지고 통기성이 좋아 사계절 입기 좋습니다.",
     usageGuide: "30도 이하 찬물에 단독 손세탁 또는 울 코스로 세탁하고, 그늘에서 말려 주세요.",
     description:
