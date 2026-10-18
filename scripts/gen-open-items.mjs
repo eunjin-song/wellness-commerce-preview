@@ -15,8 +15,20 @@ const lines = [
   "",
 ]
 
+const cell = (text) => String(text).replaceAll("|", "\\|").replaceAll("\n", " ")
+
 for (const item of open) {
   lines.push(`### ${item.title}${item.requested ? "  ·  요청하신 항목" : ""}`, "", item.detail, "")
+  if (item.leaning) lines.push(`**${item.leaning}**`, "")
+  if (item.table) {
+    lines.push(
+      `| ${item.table.headers.map(cell).join(" | ")} |`,
+      `| ${item.table.headers.map(() => "---").join(" | ")} |`,
+      ...item.table.rows.map((row) => `| ${row.map(cell).join(" | ")} |`),
+      ""
+    )
+    if (item.table.note) lines.push(`> ${item.table.note}`, "")
+  }
   if (item.checklist?.length) {
     lines.push("확인할 것", ...item.checklist.map((c) => `- [ ] ${c}`), "")
   }

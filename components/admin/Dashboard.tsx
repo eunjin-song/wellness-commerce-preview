@@ -80,8 +80,43 @@ export default function Dashboard() {
                     요청하신 항목
                   </span>
                 )}
+                {item.leaning && <span className="status-pill">잠정 결정</span>}
               </div>
               <p className="mt-2 leading-relaxed">{item.detail}</p>
+              {item.leaning && <p className="mt-2 font-medium">{item.leaning}</p>}
+              {item.table && (
+                <div className="relative mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[760px] border-collapse text-left text-xs leading-relaxed">
+                    <thead>
+                      <tr className="border-b border-brown/40">
+                        {item.table.headers.map((h) => (
+                          <th key={h} scope="col" className="py-2 pr-4 font-medium">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-brown/15">
+                      {item.table.rows.map((row) => (
+                        <tr key={row[0]} className="align-top">
+                          {row.map((c, i) =>
+                            i === 0 ? (
+                              <th key={i} scope="row" className="py-3 pr-4 font-medium">
+                                {c}
+                              </th>
+                            ) : (
+                              <td key={i} className="py-3 pr-4">
+                                {c}
+                              </td>
+                            )
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {item.table.note && <p className="mt-3">{item.table.note}</p>}
+                </div>
+              )}
               {item.checklist && (
                 <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-relaxed">
                   {item.checklist.map((c) => (
