@@ -1,126 +1,75 @@
 "use client"
 
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useState } from "react"
-import type { MockReview } from "@/lib/mock/products"
+import type { Product } from "@/lib/mock/products"
+import { useProductReviews, useQuestions, useUser } from "@/lib/hooks"
+import ReviewSection from "@/components/products/ReviewSection"
+import QnaList from "@/components/qna/QnaList"
+import QnaForm from "@/components/qna/QnaForm"
 
-const TABS = ["상세 정보", "사용 방법", "구매 후기/Q&A"] as const
+type Tab = "detail" | "usage" | "reviews" | "qna"
 
-export default function ProductTabs({
-  description,
-  usageGuide,
-  reviews,
-}: {
-  description: string
-  usageGuide: string
-  reviews: MockReview[]
-}) {
-  const [active, setActive] = useState<(typeof TABS)[number]>(TABS[0])
+export default function ProductTabs({ product }: { product: Product }) {
+  const [active, setActive] = useState<Tab>("detail")
+  const [writing, setWriting] = useState(false)
+  const { user } = useUser()
+  const pathname = usePathname()
+  const reviews = useProductReviews(product)
+  const questions = useQuestions(product.id)
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "detail", label: "상세 정보" },
+    { id: "usage", label: "사용 방법" },
+    { id: "reviews", label: `후기 ${reviews.length}` },
+    { id: "qna", label: `Q&A ${questions.length}` },
+  ]
 
   return (
     <div>
-      <div className="flex gap-8 border-b border-brown/25">
-        {TABS.map((tab) => (
+      <div role="tablist" aria-label="상품 정보" className="flex gap-6 overflow-x-auto border-b border-brown/25 sm:gap-8">
+        {tabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActive(tab)}
-            className={`relative pb-4 text-sm transition-colors
-              ${active === tab ? "font-medium text-brown" : "text-brown hover:underline"}`}
+            key={tab.id}
+            id={`tab-${tab.id}`}
+            role="tab"
+            type="button"
+            aria-selected={active === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            onClick={() => setActive(tab.id)}
+            className={`relative shrink-0 pb-4 text-sm ${active === tab.id ? "font-semibold" : ""}`}
           >
-            {tab}
-            {active === tab && (
-              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brown" />
-            )}
+            {tab.label}
+            {active === tab.id && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-brown" />}
           </button>
         ))}
       </div>
 
-      <div className="py-10 font-sans text-sm leading-relaxed text-brown">
-        {active === "상세 정보" && <div className="whitespace-pre-line">{description}</div>}
-        {active === "사용 방법" && <div className="whitespace-pre-line">{usageGuide}</div>}
-        {active === "구매 후기/Q&A" && <ReviewsSection initialReviews={reviews} />}
+      <div role="tabpanel" id={`panel-${active}`} aria-labelledby={`tab-${active}`} className="py-10 text-sm leading-relaxed">
+        {active === "detail" && <div className="whitespace-pre-line">{product.description}</div>}
+        {active === "usage" && <div className="whitespace-pre-line">{product.usageGuide}</div>}
+        {active === "reviews" && <ReviewSection product={product} />}
+        {active === "qna" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p>이 상품에 대해 궁금한 점을 남겨주세요.</p>
+              {!writing &&
+                (user ? (
+                  <button type="button" className="btn-outline" onClick={() => setWriting(true)}>
+                    질문하기
+                  </button>
+                ) : (
+                  <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="btn-outline">
+                    로그인 후 질문하기
+                  </Link>
+                ))}
+            </div>
+            {writing && <QnaForm productId={product.id} onDone={() => setWriting(false)} />}
+            <QnaList questions={questions} />
+          </div>
+        )}
       </div>
-    </div>
-  )
-}
-
-function ReviewsSection({ initialReviews }: { initialReviews: MockReview[] }) {
-  const [reviews, setReviews] = useState(initialReviews)
-  const [rating, setRating] = useState(5)
-  const [content, setContent] = useState("")
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!content.trim()) return
-
-    setReviews((prev) => [
-      {
-        id: `local-${Date.now()}`,
-        rating,
-        content: content.trim(),
-        author: "나",
-        createdAt: new Date().toISOString().slice(0, 10),
-      },
-      ...prev,
-    ])
-    setContent("")
-  }
-
-  return (
-    <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="rounded-2xl bg-paper p-6">
-        <p className="text-sm font-medium text-brown">구매하신 상품은 어떠셨나요?</p>
-
-        <div className="mt-3 flex gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setRating(n)}
-              aria-label={`${n}점`}
-              className={`text-2xl leading-none ${n <= rating ? "text-brown" : "text-brown/30"}`}
-            >
-              ★
-            </button>
-          ))}
-        </div>
-
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={3}
-          placeholder="솔직한 사용 후기를 남겨주세요."
-          className="mt-3 w-full resize-none rounded-xl border border-brown/25 bg-paper px-4 py-3 text-sm outline-none
-                     transition focus:border-brown focus:ring-1 focus:ring-brown"
-        />
-
-        <button
-          type="submit"
-          className="mt-3 rounded-full bg-brown px-6 py-2.5 text-sm font-medium text-paper
-                     transition duration-300 ease-gentle hover:bg-brown/85"
-        >
-          후기 등록
-        </button>
-      </form>
-
-      {reviews.length === 0 ? (
-        <p className="text-brown">아직 등록된 후기가 없습니다.</p>
-      ) : (
-        <ul className="divide-y divide-brown/20">
-          {reviews.map((r) => (
-            <li key={r.id} className="py-6 first:pt-0">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-0.5 text-brown">
-                  <span>{"★".repeat(r.rating)}</span>
-                  <span className="text-brown/25">{"★".repeat(5 - r.rating)}</span>
-                </div>
-                <span className="text-xs text-brown">{r.author}</span>
-              </div>
-              <p className="mt-2 text-brown">{r.content}</p>
-              <p className="mt-2 text-xs text-brown">{r.createdAt}</p>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

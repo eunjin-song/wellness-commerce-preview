@@ -1,79 +1,92 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useCartStore } from "@/lib/store/cart"
+import { useRouter } from "next/navigation"
+import { optionLabel, useCartStore } from "@/lib/store/cart"
+import { useCheckout } from "@/lib/store/checkout"
+import { useHydrated } from "@/lib/hooks"
+import { FREE_SHIPPING_THRESHOLD, shippingFor } from "@/lib/shop"
+import { won } from "@/lib/format"
 
 export default function CartPage() {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const router = useRouter()
+  const hydrated = useHydrated()
+  const items = useCartStore((s) => s.items)
+  const updateQuantity = useCartStore((s) => s.updateQuantity)
+  const removeItem = useCartStore((s) => s.removeItem)
+  const setCheckoutItems = useCheckout((s) => s.setItems)
 
-  const items = useCartStore((state) => state.items)
-  const updateQuantity = useCartStore((state) => state.updateQuantity)
-  const removeItem = useCartStore((state) => state.removeItem)
+  if (!hydrated) return <main className="mx-auto max-w-3xl px-6 py-16" aria-busy="true" />
 
-  if (!mounted) return null
-
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const shippingFee = shippingFor(subtotal)
 
   if (items.length === 0) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <p className="text-brown">장바구니가 비어 있습니다.</p>
-        <Link href="/products" className="mt-4 inline-block text-sm text-brown underline underline-offset-4">
+        <h1 className="font-display text-3xl">장바구니</h1>
+        <p className="mt-6">장바구니가 비어 있어요.</p>
+        <Link href="/products" className="btn-outline mt-8">
           상품 둘러보기
         </Link>
       </main>
     )
   }
 
+  function handleOrder() {
+    setCheckoutItems(items, "cart")
+    router.push("/checkout")
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-display text-3xl text-brown">장바구니</h1>
+      <h1 className="font-display text-3xl">장바구니</h1>
 
       <ul className="mt-10 divide-y divide-brown/20">
         {items.map((item) => (
-          <li key={item.productId} className="flex items-center gap-4 py-6">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brown/10">
+          <li key={item.key} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-6">
+            <Link href={`/products/${item.productId}`} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brown/10">
               {item.thumbnailUrl && (
                 <Image src={item.thumbnailUrl} alt={item.name} fill className="object-cover" sizes="80px" />
               )}
+            </Link>
+
+            <div className="min-w-0 flex-1 basis-40">
+              <p className="text-sm font-medium">{item.name}</p>
+              {optionLabel(item) && <p className="mt-1 text-xs">옵션: {optionLabel(item)}</p>}
+              <p className="mt-1 text-sm">{won(item.price)}</p>
             </div>
 
-            <div className="flex-1">
-              <p className="text-sm font-medium text-brown">{item.name}</p>
-              <p className="mt-1 text-sm text-brown">{item.price.toLocaleString("ko-KR")}원</p>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-full border border-brown/25 px-3 py-1.5">
+            <div className="flex items-center rounded-full border border-brown/25 px-2 py-1">
               <button
-                onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                type="button"
+                onClick={() => updateQuantity(item.key, item.quantity - 1)}
                 disabled={item.quantity <= 1}
-                aria-label="수량 감소"
-                className="h-6 w-6 text-brown disabled:opacity-30"
+                aria-label={`${item.name} 수량 감소`}
+                className="h-7 w-7 disabled:opacity-30"
               >
                 −
               </button>
-              <span className="w-6 text-center text-sm tabular-nums">{item.quantity}</span>
+              <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
               <button
-                onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                type="button"
+                onClick={() => updateQuantity(item.key, item.quantity + 1)}
                 disabled={item.quantity >= item.stock}
-                aria-label="수량 증가"
-                className="h-6 w-6 text-brown disabled:opacity-30"
+                aria-label={`${item.name} 수량 증가`}
+                className="h-7 w-7 disabled:opacity-30"
               >
                 +
               </button>
             </div>
 
-            <p className="w-24 text-right text-sm font-medium text-brown">
-              {(item.price * item.quantity).toLocaleString("ko-KR")}원
-            </p>
+            <p className="w-24 text-right text-sm font-medium tabular-nums">{won(item.price * item.quantity)}</p>
 
             <button
-              onClick={() => removeItem(item.productId)}
-              aria-label="삭제"
-              className="text-xs text-brown underline underline-offset-4"
+              type="button"
+              onClick={() => removeItem(item.key)}
+              aria-label={`${item.name} 삭제`}
+              className="text-xs underline underline-offset-4"
             >
               삭제
             </button>
@@ -81,17 +94,26 @@ export default function CartPage() {
         ))}
       </ul>
 
-      <div className="mt-8 flex items-center justify-between border-t border-brown/25 pt-6">
-        <span className="text-base text-brown">총 결제 금액</span>
-        <span className="font-display text-2xl text-brown">{total.toLocaleString("ko-KR")}원</span>
-      </div>
+      <dl className="mt-8 space-y-3 border-t border-brown/25 pt-6 text-sm">
+        <div className="flex justify-between">
+          <dt>상품 금액</dt>
+          <dd className="tabular-nums">{won(subtotal)}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt>배송비</dt>
+          <dd className="tabular-nums">{shippingFee === 0 ? "무료" : won(shippingFee)}</dd>
+        </div>
+        {shippingFee > 0 && (
+          <p className="text-xs">{won(FREE_SHIPPING_THRESHOLD - subtotal)} 더 담으면 배송비가 무료예요.</p>
+        )}
+        <div className="flex items-baseline justify-between border-t border-brown/25 pt-4">
+          <dt className="text-base">총 결제 금액</dt>
+          <dd className="font-display text-2xl tabular-nums">{won(subtotal + shippingFee)}</dd>
+        </div>
+      </dl>
 
-      <button
-        disabled
-        title="결제 연동은 미리보기 범위 밖입니다"
-        className="mt-6 block w-full cursor-not-allowed rounded-full bg-brown/50 py-4 text-center text-sm font-medium text-paper"
-      >
-        주문하기 (미리보기에서는 비활성화)
+      <button type="button" onClick={handleOrder} className="btn-primary mt-8 w-full py-4">
+        주문하기
       </button>
     </main>
   )

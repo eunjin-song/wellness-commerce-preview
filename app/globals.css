@@ -34,6 +34,36 @@ body {
   color: var(--color-paper);
 }
 
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-brown px-6 py-3 text-sm font-medium text-paper transition duration-300 ease-gentle hover:bg-brown/85 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-brown px-6 py-3 text-sm font-medium text-brown transition duration-300 ease-gentle hover:bg-paper disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .field {
+    @apply w-full rounded-xl border border-brown/25 bg-paper px-4 py-3 text-sm text-brown outline-none transition placeholder:text-brown/50 focus:border-brown focus:ring-1 focus:ring-brown;
+  }
+  .field-label {
+    @apply mb-2 block text-sm font-medium;
+  }
+  .field-error {
+    @apply mt-2 text-sm font-medium;
+  }
+  .chip {
+    @apply rounded-full border border-brown/25 px-4 py-2 text-sm transition hover:border-brown;
+  }
+  .chip[aria-pressed="true"] {
+    @apply border-brown bg-brown text-paper;
+  }
+  .status-pill {
+    @apply inline-block rounded-full border border-brown/40 px-2.5 py-0.5 text-xs;
+  }
+  .status-pill[data-tone="solid"] {
+    @apply border-brown bg-brown text-paper;
+  }
+}
+
 @keyframes coming-soon-fade {
   from {
     opacity: 0;

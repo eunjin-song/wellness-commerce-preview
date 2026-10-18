@@ -1,86 +1,176 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCartStore } from "@/lib/store/cart"
+import type { Product } from "@/lib/mock/products"
+import { cartKey, useCartStore } from "@/lib/store/cart"
+import { useCheckout } from "@/lib/store/checkout"
+import { won } from "@/lib/format"
+import HeartButton from "@/components/products/HeartButton"
 
-interface Props {
-  productId: string
-  name: string
-  price: number
-  stock: number
-  thumbnailUrl: string | null
-}
+type Message = { type: "error" | "added"; text: string }
 
-export default function ProductPurchasePanel({ productId, name, price, stock, thumbnailUrl }: Props) {
-  const [quantity, setQuantity] = useState(1)
-  const [justAdded, setJustAdded] = useState(false)
+export default function ProductPurchasePanel({ product }: { product: Product }) {
+  const { id, name, price, stock, colors, sizes, images } = product
   const router = useRouter()
-  const addItem = useCartStore((state) => state.addItem)
+  const addItem = useCartStore((s) => s.addItem)
+  const setCheckoutItems = useCheckout((s) => s.setItems)
 
-  const inc = () => setQuantity((q) => Math.min(q + 1, stock))
-  const dec = () => setQuantity((q) => Math.max(q - 1, 1))
+  const [color, setColor] = useState<string | null>(null)
+  const [size, setSize] = useState<string | null>(null)
+  const [quantity, setQuantity] = useState(1)
+  const [message, setMessage] = useState<Message | null>(null)
+
+  const soldOut = stock === 0
   const totalPrice = price * quantity
 
+  function validate() {
+    if (colors && !color) {
+      setMessage({ type: "error", text: "색상을 선택해 주세요." })
+      return false
+    }
+    if (sizes && !size) {
+      setMessage({ type: "error", text: "사이즈를 선택해 주세요." })
+      return false
+    }
+    return true
+  }
+
+  function buildItem() {
+    return {
+      productId: id,
+      name,
+      price,
+      thumbnailUrl: images[0],
+      stock,
+      quantity,
+      color: color ?? undefined,
+      size: size ?? undefined,
+    }
+  }
+
   function handleAddToCart() {
-    addItem({ productId, name, price, thumbnailUrl, stock, quantity })
-    setJustAdded(true)
-    setTimeout(() => setJustAdded(false), 1500)
+    if (!validate()) return
+    addItem(buildItem())
+    setMessage({ type: "added", text: "장바구니에 담았어요." })
   }
 
   function handleBuyNow() {
-    addItem({ productId, name, price, thumbnailUrl, stock, quantity })
-    router.push("/cart")
+    if (!validate()) return
+    const item = buildItem()
+    setCheckoutItems([{ ...item, key: cartKey(id, item.color, item.size) }], "direct")
+    router.push("/checkout")
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex w-fit items-center justify-between rounded-full border border-brown/25 px-4 py-2">
-        <button
-          onClick={dec}
-          disabled={quantity <= 1}
-          aria-label="수량 감소"
-          className="h-8 w-8 rounded-full text-lg text-brown transition hover:bg-paper disabled:opacity-30"
-        >
-          −
-        </button>
-        <span className="w-10 text-center font-sans tabular-nums">{quantity}</span>
-        <button
-          onClick={inc}
-          disabled={quantity >= stock}
-          aria-label="수량 증가"
-          className="h-8 w-8 rounded-full text-lg text-brown transition hover:bg-paper disabled:opacity-30"
-        >
-          +
-        </button>
-      </div>
+    <div className="space-y-6">
+      {colors && (
+        <div>
+          <p className="field-label">
+            색상 <span className="font-normal">· {color ?? "선택해 주세요"}</span>
+          </p>
+          <div className="flex flex-wrap gap-3" role="group" aria-label="색상 선택">
+            {colors.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                aria-pressed={color === c.name}
+                aria-label={c.name}
+                title={c.name}
+                onClick={() => {
+                  setColor(c.name)
+                  setMessage(null)
+                }}
+                className={`h-9 w-9 rounded-full border border-brown/30 transition ${
+                  color === c.name ? "ring-2 ring-brown ring-offset-2 ring-offset-cream" : "hover:border-brown"
+                }`}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-      <p className="text-sm text-brown">{stock > 0 ? `재고 ${stock}개` : "일시 품절"}</p>
+      {sizes && (
+        <div>
+          <p className="field-label">
+            사이즈 <span className="font-normal">· {size ?? "선택해 주세요"}</span>
+          </p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="사이즈 선택">
+            {sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className="chip min-w-14"
+                aria-pressed={size === s}
+                onClick={() => {
+                  setSize(s)
+                  setMessage(null)
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <p className="field-label">수량</p>
+        <div className="flex w-fit items-center rounded-full border border-brown/25 px-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(q - 1, 1))}
+            disabled={quantity <= 1}
+            aria-label="수량 감소"
+            className="h-8 w-8 rounded-full text-lg transition hover:bg-paper disabled:opacity-30"
+          >
+            −
+          </button>
+          <span className="w-10 text-center tabular-nums" aria-live="polite">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.min(q + 1, stock))}
+            disabled={quantity >= stock}
+            aria-label="수량 증가"
+            className="h-8 w-8 rounded-full text-lg transition hover:bg-paper disabled:opacity-30"
+          >
+            +
+          </button>
+        </div>
+        <p className="mt-2 text-sm">{soldOut ? "일시 품절" : `재고 ${stock}개`}</p>
+      </div>
 
       <div className="flex items-center justify-between border-t border-brown/25 pt-4">
-        <span className="text-sm text-brown">총 상품 금액</span>
-        <span className="font-sans text-xl font-semibold text-brown">
-          {totalPrice.toLocaleString("ko-KR")}원
-        </span>
+        <span className="text-sm">총 상품 금액</span>
+        <span className="text-xl font-semibold tabular-nums">{won(totalPrice)}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={handleAddToCart}
-          disabled={stock === 0}
-          className="rounded-full border border-brown py-3.5 text-sm font-medium text-brown
-                     transition duration-300 ease-gentle hover:bg-paper disabled:opacity-40"
-        >
-          {justAdded ? "담았어요" : "장바구니 담기"}
+      {message && (
+        <p role={message.type === "error" ? "alert" : "status"} className="text-sm font-medium">
+          {message.text}
+          {message.type === "added" && (
+            <>
+              {" "}
+              <Link href="/cart" className="underline underline-offset-4">
+                장바구니 보기
+              </Link>
+            </>
+          )}
+        </p>
+      )}
+
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-3">
+        <button type="button" onClick={handleAddToCart} disabled={soldOut} className="btn-outline">
+          장바구니 담기
         </button>
-        <button
-          onClick={handleBuyNow}
-          disabled={stock === 0}
-          className="rounded-full bg-brown py-3.5 text-sm font-medium text-paper
-                     transition duration-300 ease-gentle hover:bg-brown/85 disabled:opacity-40"
-        >
+        <button type="button" onClick={handleBuyNow} disabled={soldOut} className="btn-primary">
           바로 구매하기
         </button>
+        <HeartButton productId={id} className="h-12 w-12 border border-brown/25 hover:border-brown" />
       </div>
     </div>
   )
