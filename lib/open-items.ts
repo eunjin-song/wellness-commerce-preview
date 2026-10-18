@@ -61,20 +61,43 @@ export const OPEN_ITEMS: OpenItem[] = [
     requested: true,
   },
   {
-    id: "password-policy",
-    title: "비밀번호·이메일 인증 방식",
+    id: "login-session",
+    title: "로그인 유지 기간",
     detail:
-      "이메일+비밀번호 가입을 기준으로, 아래를 정해야 해요. 가입 인증·비밀번호 찾기 메일은 기본 제공 발송량이 매우 적다는 자료가 많아서(정확한 숫자는 공식 문서 확인 필요), 오픈 전에 별도 메일 발송 서비스 연결이 필요해요.",
+      "한 번 로그인하면 다시 로그인하라고 하기 전까지 얼마나 오래 기억해 줄지 정하는 거예요. 추천은 '로그아웃을 누를 때까지 유지(기본값)'예요. 공용 컴퓨터가 걱정되면 30일 같은 기간 제한을 둘 수 있는데, 기간 제한이 무료 플랜에서 되는지는 Supabase 설정에서 확인이 필요해요.",
+    checklist: ["기본값(로그아웃할 때까지) / 30일 / 7일 중 선택", "기간 제한을 쓰려면 Supabase 무료 플랜에서 가능한지 확인", "나중에 '자동 로그인' 체크박스를 둘지"],
+    links: [{ label: "Supabase 로그인 세션 안내", url: "https://supabase.com/docs/guides/auth/sessions" }],
+    where: "서버 연결 시 Supabase 설정",
+  },
+  {
+    id: "mail-service",
+    title: "가입 인증·비밀번호 재설정 메일 발송 서비스",
+    detail:
+      "가입 인증 메일과 비밀번호 재설정 메일을 실제로 보내려면 '메일 보내주는 서비스'가 필요해요. Supabase 기본 메일은 발송량이 시간당 몇 통 수준으로 아주 적다는 자료가 많아서(정확한 숫자는 공식 문서 확인 필요) 그대로는 오픈할 수 없어요. 추천은 Resend예요. 아래 숫자는 2026-10-19에 검색해서 확인한 값이라, 가입 전에 각 공식 가격 페이지에서 다시 확인해야 해요.",
     checklist: [
-      "로그인 아이디: 이메일로 할지 (추천), 별도 아이디를 둘지",
-      "비밀번호 규칙: 지금은 영문+숫자 8자 이상",
-      "가입 시 이메일 인증을 받을지 (추천: 받기 — 가짜 이메일 방지)",
-      "비밀번호 찾기: 이메일로 재설정 링크 보내기 (추천) / 본인인증으로 찾기",
-      "로그인 유지 기간",
-      "인증·재설정 메일 발송 서비스 선택 (무료 구간이 있는 서비스 비교)",
+      "서비스 선택: Resend(추천) / Brevo / Amazon SES",
+      "Resend 무료: 월 3,000통, 하루 100통 (하루 100명 넘게 가입하면 막힐 수 있음 → 유료 월 $20, 50,000통)",
+      "Brevo 무료: 하루 300통 (하루 한도가 더 넉넉함. 메일 하단에 서비스 로고가 붙는지 확인 필요)",
+      "Amazon SES: 1,000통에 약 $0.10으로 가장 저렴하지만 설정이 어렵고 승인 대기가 있어 초보자에게는 비추천",
+      "보내는 주소 정하기 (예: noreply@ooro.store)",
+      "가비아 DNS에 서비스가 알려주는 값을 몇 줄 추가 (지금 사이트 연결에는 영향 없음)",
+      "Supabase에 메일 서비스 연결 (SMTP 설정)",
+      "연결 후 가입 인증 메일·비밀번호 재설정 메일이 실제로 오는지 테스트",
     ],
-    links: [{ label: "Supabase 요금 안내", url: "https://supabase.com/pricing" }],
+    links: [
+      { label: "Resend 요금", url: "https://resend.com/pricing" },
+      { label: "Brevo 무료 SMTP", url: "https://www.brevo.com/free-smtp-server" },
+      { label: "Supabase 요금 안내", url: "https://supabase.com/pricing" },
+    ],
+  },
+  {
+    id: "password-policy",
+    title: "로그인·비밀번호 기본 방식",
+    detail: "이메일+비밀번호 가입 방식으로 확정했어요.",
     where: "components/auth/SignupForm.tsx, lib/format.ts",
+    done: true,
+    decision:
+      "아이디는 이메일 / 비밀번호 규칙은 영문+숫자 8자 이상 유지 / 가입 시 이메일 인증을 받아야 가입 완료 / 비밀번호는 이메일로 재설정 링크 발송 (2026-10-19 확정). 인증·재설정 화면은 서버 연결할 때 실제 동작으로 만들어요.",
   },
   {
     id: "backend",
