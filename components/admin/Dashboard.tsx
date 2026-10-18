@@ -82,6 +82,24 @@ export default function Dashboard() {
                 )}
               </div>
               <p className="mt-2 leading-relaxed">{item.detail}</p>
+              {item.checklist && (
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-xs leading-relaxed">
+                  {item.checklist.map((c) => (
+                    <li key={c}>{c}</li>
+                  ))}
+                </ul>
+              )}
+              {item.links && (
+                <ul className="mt-3 space-y-1 text-xs">
+                  {item.links.map((l) => (
+                    <li key={l.url}>
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {item.where && <p className="mt-2 text-xs">임시값 위치: {item.where}</p>}
             </li>
           ))}

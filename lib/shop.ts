@@ -8,7 +8,7 @@ export function shippingFor(subtotal: number) {
   return subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
 }
 
-/** 후기를 쓸 수 있는 주문 상태 (임시값 — 구매자만, 배송 완료 후) */
+/** 후기를 쓸 수 있는 주문 상태 (확정: 구매자만, 배송 완료 후) */
 export const REVIEWABLE_STATUSES: OrderStatus[] = ["배송 완료"]
 
 export const ORDER_STATUSES: OrderStatus[] = ["주문 접수", "결제 완료", "배송 준비중", "배송중", "배송 완료", "취소"]
