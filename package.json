@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "open-items": "node scripts/gen-open-items.mjs",
+    "implementation": "node scripts/gen-implementation.mjs",
     "db:test": "node supabase/tests/security.test.mjs"
   },
   "dependencies": {
