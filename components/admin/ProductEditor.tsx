@@ -1,9 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { AdminProduct } from "@/lib/types"
 import { useDeleteProduct, useSaveProduct } from "@/lib/queries/admin"
+import { useCategories } from "@/lib/queries/shop"
+import { salePrice } from "@/lib/pricing"
 import { toKoreanError } from "@/lib/db/errors"
 import { uid, won } from "@/lib/format"
 import ImagePicker from "@/components/ui/ImagePicker"
@@ -34,8 +37,11 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
   const [name, setName] = useState(product?.name ?? "")
   const [subtitle, setSubtitle] = useState(product?.subtitle ?? "")
   const [category, setCategory] = useState(product?.category ?? "")
-  const [price, setPrice] = useState(product ? String(product.price) : "")
-  const [originalPrice, setOriginalPrice] = useState(product?.originalPrice ? String(product.originalPrice) : "")
+  // 정가: 할인 중이면 저장된 정가, 할인이 없으면 판매가가 곧 정가예요.
+  const [listPrice, setListPrice] = useState(product ? String(product.originalPrice ?? product.price) : "")
+  const [discount, setDiscount] = useState(product ? String(product.discountPercent) : "0")
+  const categoriesQuery = useCategories()
+  const categories = categoriesQuery.data ?? []
   const [stock, setStock] = useState(product ? String(product.stock) : "0")
   const [isActive, setIsActive] = useState(product?.isActive ?? true)
   const [images, setImages] = useState<string[]>(product?.images ?? [])
@@ -54,15 +60,13 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
     e.preventDefault()
     const found: string[] = []
 
-    const priceValue = parseWon(price)
+    const listValue = parseWon(listPrice)
+    const discountValue = parseWon(discount)
     const stockValue = parseWon(stock)
     if (!name.trim()) found.push("상품명을 입력해 주세요.")
-    if (!category.trim()) found.push("카테고리를 입력해 주세요.")
-    if (price.trim() === "" || priceValue === null) found.push("기본 가격은 0 이상의 숫자로 입력해 주세요.")
-    const originalValue = originalPrice.trim() === "" ? null : parseWon(originalPrice)
-    if (originalPrice.trim() !== "" && (originalValue === null || (priceValue !== null && originalValue <= priceValue))) {
-      found.push("정가(할인 전 가격)는 기본 가격보다 큰 숫자로 입력하거나, 할인이 없으면 비워 두세요.")
-    }
+    if (listPrice.trim() === "" || listValue === null) found.push("정가는 0 이상의 숫자로 입력해 주세요.")
+    if (discountValue === null || discountValue > 99) found.push("할인율은 0~99 사이의 숫자로 입력해 주세요. 할인이 없으면 0이에요.")
+    else if (discountValue > 0 && (listValue === null || listValue < 100)) found.push("할인율을 쓰려면 정가를 100원 이상으로 입력해 주세요.")
     if (stockValue === null) found.push("재고는 0 이상의 숫자로 입력해 주세요.")
     if (images.length === 0) found.push("상품 사진을 1장 이상 올려주세요.")
 
@@ -87,9 +91,9 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
         id: product?.id ?? `p-${uid()}`,
         name: name.trim(),
         subtitle: subtitle.trim(),
-        category: category.trim(),
-        price: priceValue ?? 0,
-        originalPrice: originalValue,
+        category,
+        listPrice: listValue ?? 0,
+        discountPercent: discountValue ?? 0,
         stock: stockValue ?? 0,
         isActive,
         images,
@@ -149,7 +153,23 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
             <label htmlFor="p-category" className="field-label">
               카테고리
             </label>
-            <input id="p-category" className="field" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="예: 슬립 케어" />
+            <select id="p-category" className="field" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">미분류</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+              {/* 목록에 없는 이름(예: 방금 이름이 바뀐 경우)이 남아 있어도 선택이 사라지지 않게 */}
+              {category !== "" && !categories.some((c) => c.name === category) && <option value={category}>{category}</option>}
+            </select>
+            <p className="mt-1 text-xs">
+              목록에 없으면{" "}
+              <Link href="/admin/categories" className="underline underline-offset-4">
+                카테고리 관리
+              </Link>
+              에서 먼저 추가해 주세요.
+            </p>
           </div>
         </div>
         <div>
@@ -158,35 +178,51 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
           </label>
           <input id="p-subtitle" className="field" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
         </div>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-3">
           <div>
-            <label htmlFor="p-price" className="field-label">
-              기본 가격 (원) — 실제로 결제되는 가격
+            <label htmlFor="p-list" className="field-label">
+              정가 (원)
             </label>
-            <input id="p-price" inputMode="numeric" className="field tabular-nums" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <input id="p-list" inputMode="numeric" className="field tabular-nums" value={listPrice} onChange={(e) => setListPrice(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="p-original" className="field-label">
-              정가 (원, 선택) — 할인 전 가격
+            <label htmlFor="p-discount" className="field-label">
+              할인율 (%)
             </label>
             <input
-              id="p-original"
+              id="p-discount"
               inputMode="numeric"
               className="field tabular-nums"
-              value={originalPrice}
-              onChange={(e) => setOriginalPrice(e.target.value)}
-              placeholder="할인이 없으면 비워 두세요"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              placeholder="0"
             />
-            <p className="mt-1 text-xs">
-              {(() => {
-                const o = parseWon(originalPrice)
-                const p = parseWon(price)
-                if (originalPrice.trim() === "" || o === null || p === null || o <= p) return "입력하면 정가에 취소선과 할인율이 함께 보여요."
-                return `고객 화면에는 정가 ${won(o)} → ${Math.round((1 - p / o) * 100)}% 할인으로 보여요.`
-              })()}
-            </p>
+          </div>
+          <div>
+            <p className="field-label">판매가 (자동 계산)</p>
+            {(() => {
+              const list = parseWon(listPrice)
+              const pct = parseWon(discount)
+              const ok = list !== null && pct !== null && pct <= 99 && listPrice.trim() !== ""
+              const sale = ok ? salePrice(list, pct) : null
+              return (
+                <>
+                  <p className="field flex items-center tabular-nums" aria-live="polite" data-testid="sale-price">
+                    {sale === null ? "-" : won(sale)}
+                  </p>
+                  <p className="mt-1 text-xs">
+                    {sale !== null && pct !== null && pct > 0 && list !== null
+                      ? `고객 화면: 정가 ${won(list)}(취소선) · ${pct}% · ${won(sale)}`
+                      : "할인율이 0이면 정가가 그대로 판매가예요."}
+                  </p>
+                </>
+              )
+            })()}
           </div>
         </div>
+        <p className="-mt-2 text-xs leading-relaxed">
+          판매가 = 정가 × (100 − 할인율) ÷ 100 을 10원 단위로 내림해요. 고객은 항상 이 판매가로 결제해요. 옵션 추가금액은 할인과 상관없이 판매가에 더해져요.
+        </p>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="p-stock" className="field-label">

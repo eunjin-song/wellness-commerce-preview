@@ -68,6 +68,8 @@ try {
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0003_stock_and_order_cancel.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0004_edit_delete_own_posts.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0005_product_order_and_discount.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0006_discount_rate.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0007_categories.sql`, "utf8"))
   console.log("마이그레이션 적용 완료")
   await c.query(fs.readFileSync(`${repo}/supabase/seed.sql`, "utf8"))
   console.log("시드 적용 완료\n")
@@ -169,14 +171,42 @@ try {
     await as(U.admin, `delete from public.products where id = 'p-last'`)
     return r
   }, (r) => r.rows[0].mine === r.rows[0].prev + 1 || JSON.stringify(r.rows))
-  await expectFail("정가는 판매가보다 커야 한다", () => as(U.admin, `update public.products set original_price = 100 where id = 'calm-sleep-serum'`), /products_original_price_check|check constraint/)
-  await expect("정가를 넣으면 공개 화면에서 보이고, 비우면 사라진다", async () => {
+  const serum = () => anon(`select price, original_price, discount_percent from public.products_public where id = 'calm-sleep-serum'`)
+  const resetServum = () => as(U.admin, `update public.products set discount_percent = 0, price = 42000 where id = 'calm-sleep-serum'`)
+  await expect("공개 뷰에 할인율(discount_percent)이 있다", () => anon(`select discount_percent from public.products_public limit 1`), (r) => "discount_percent" in r.rows[0] || JSON.stringify(r.rows))
+  await expect("정가와 할인율을 넣으면 판매가가 자동 계산된다 (58,000원 · 15% → 49,300원)", async () => {
+    await as(U.admin, `update public.products set original_price = 58000, discount_percent = 15 where id = 'calm-sleep-serum'`)
+    return serum()
+  }, (r) => (r.rows[0].price === 49300 && r.rows[0].original_price === 58000 && r.rows[0].discount_percent === 15) || JSON.stringify(r.rows))
+  await expect("판매가는 10원 단위로 내림한다 (39,900원 · 15% = 33,915 → 33,910원)", async () => {
+    await as(U.admin, `update public.products set original_price = 39900, discount_percent = 15 where id = 'calm-sleep-serum'`)
+    return serum()
+  }, (r) => r.rows[0].price === 33910 || JSON.stringify(r.rows))
+  await expect("판매가를 직접 고쳐도 정가·할인율 계산값으로 다시 맞춰진다", async () => {
+    await as(U.admin, `update public.products set price = 1 where id = 'calm-sleep-serum'`)
+    return serum()
+  }, (r) => r.rows[0].price === 33910 || JSON.stringify(r.rows))
+  await expect("정가를 바꾸면 판매가도 함께 바뀐다 (60,000원 · 15% → 51,000원)", async () => {
     await as(U.admin, `update public.products set original_price = 60000 where id = 'calm-sleep-serum'`)
-    const a = await anon(`select original_price from public.products_public where id = 'calm-sleep-serum'`)
-    await as(U.admin, `update public.products set original_price = null where id = 'calm-sleep-serum'`)
-    const b = await anon(`select original_price from public.products_public where id = 'calm-sleep-serum'`)
-    return { a: a.rows[0].original_price, b: b.rows[0].original_price }
-  }, (r) => (r.a === 60000 && r.b === null) || JSON.stringify(r))
+    return serum()
+  }, (r) => r.rows[0].price === 51000 || JSON.stringify(r.rows))
+  await expect("주문은 할인이 적용된 판매가로 계산된다 (정가 70,000원 · 20% → 56,000원)", async () => {
+    await as(U.admin, `update public.products set original_price = 70000, discount_percent = 20 where id = 'calm-sleep-serum'`)
+    const r = await as(U.alice, `select * from public.place_order($1::jsonb, $2::jsonb, '')`, [JSON.stringify([{ product_id: "calm-sleep-serum", quantity: 1 }]), JSON.stringify(addr)])
+    await as(U.admin, `update public.orders set status = '취소' where id = $1`, [r.rows[0].id])
+    return r
+  }, (r) => (r.rows[0].subtotal === 56000 && r.rows[0].shipping_fee === 0 && r.rows[0].amount === 56000) || JSON.stringify(r.rows[0]))
+  await expect("할인율을 0으로 하면 할인이 사라진다 (정가 칸이 비워지고 판매가는 입력한 값)", async () => {
+    await as(U.admin, `update public.products set discount_percent = 0, price = 42000 where id = 'calm-sleep-serum'`)
+    return serum()
+  }, (r) => (r.rows[0].price === 42000 && r.rows[0].original_price === null && r.rows[0].discount_percent === 0) || JSON.stringify(r.rows))
+  await expectFail("정가 없이 할인율만 넣을 수 없다", () => as(U.admin, `update public.products set discount_percent = 10 where id = 'calm-sleep-serum'`), /discount_needs_list_price/)
+  await expectFail("할인율은 99%까지만 넣을 수 있다", () => as(U.admin, `update public.products set original_price = 50000, discount_percent = 100 where id = 'calm-sleep-serum'`), /check constraint|discount_percent/)
+  await expectFail("일반 회원은 할인율을 바꿀 수 없다", async () => {
+    const r = await as(U.alice, `update public.products set discount_percent = 50`)
+    if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
+  }, /row-level security|permission denied/)
+  await resetServum()
   await expect("관리자는 순서를 바꿀 수 있다 (마지막 상품을 맨 앞으로)", async () => {
     const before = await orderIds()
     const moved = [before[before.length - 1], ...before.slice(0, -1)]
@@ -198,6 +228,46 @@ try {
     const r = await as(U.alice, `update public.shop_settings set value = '{"ids":[]}' where key = 'home_featured'`)
     if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
   }, /row-level security/)
+
+  console.log("\n[카테고리]")
+  const cats = async () => (await anon(`select id, name from public.categories order by sort_order`)).rows
+  await expect("시드 카테고리 5개를 누구나 순서대로 읽는다", cats, (r) => (r.length === 5 && r[0].name === "슬립 케어") || JSON.stringify(r))
+  await expectFail("비회원은 카테고리를 직접 추가할 수 없다", () => anon(`insert into public.categories (name) values ('몰래')`), /permission denied/)
+  await expectFail("일반 회원도 카테고리를 직접 추가할 수 없다", () => as(U.alice, `insert into public.categories (name) values ('몰래')`), /permission denied|row-level security/)
+  await expectFail("일반 회원은 add_category 를 쓸 수 없다", () => as(U.alice, `select * from public.add_category('몰래')`), /not_admin/)
+  await expectFail("비회원은 add_category 를 쓸 수 없다", () => anon(`select * from public.add_category('몰래')`), /permission denied/)
+  let newCat
+  await expect("관리자는 카테고리를 추가하면 맨 뒤에 붙는다", async () => {
+    newCat = (await as(U.admin, `select * from public.add_category('  신규 카테고리  ')`)).rows[0]
+    return cats()
+  }, (r) => (r.length === 6 && r[5].name === "신규 카테고리") || JSON.stringify(r))
+  await expectFail("같은 이름(대소문자·공백 무시)은 추가할 수 없다", () => as(U.admin, `select * from public.add_category('신규 카테고리 ')`), /category_exists/)
+  await expectFail("빈 이름은 추가할 수 없다", () => as(U.admin, `select * from public.add_category('   ')`), /category_name_required/)
+  await expect("이름을 바꾸면 그 카테고리의 상품도 함께 바뀐다", async () => {
+    await as(U.admin, `update public.products set category = '신규 카테고리' where id = 'calm-sleep-serum'`)
+    await as(U.admin, `select public.rename_category($1, '이름 바꾼 카테고리')`, [newCat.id])
+    return anon(`select category from public.products_public where id = 'calm-sleep-serum'`)
+  }, (r) => r.rows[0].category === "이름 바꾼 카테고리" || JSON.stringify(r.rows))
+  await expectFail("다른 카테고리와 같은 이름으로는 바꿀 수 없다", () => as(U.admin, `select public.rename_category($1, '스킨케어')`, [newCat.id]), /category_exists/)
+  await expectFail("없는 카테고리의 이름은 바꿀 수 없다", () => as(U.admin, `select public.rename_category('00000000-0000-0000-0000-000000000000', 'x')`), /category_not_found/)
+  await expectFail("일반 회원은 이름을 바꿀 수 없다", () => as(U.alice, `select public.rename_category($1, '해킹')`, [newCat.id]), /not_admin/)
+  await expectFail("상품에는 목록에 없는 카테고리를 쓸 수 없다", () => as(U.admin, `update public.products set category = '없는 카테고리' where id = 'calm-sleep-serum'`), /invalid_category/)
+  await expectFail("새 상품도 목록에 없는 카테고리로 만들 수 없다", () => as(U.admin, `insert into public.products (name, price, category) values ('x', 1, '없는 카테고리')`), /invalid_category/)
+  await expect("카테고리를 삭제하면 상품은 지워지지 않고 미분류가 된다", async () => {
+    const moved = (await as(U.admin, `select public.delete_category($1) as moved`, [newCat.id])).rows[0].moved
+    const p = await as(U.admin, `select category from public.products where id = 'calm-sleep-serum'`)
+    await as(U.admin, `update public.products set category = '슬립 케어' where id = 'calm-sleep-serum'`)
+    return { moved, category: p.rows[0].category, left: (await cats()).length }
+  }, (r) => (r.moved === 1 && r.category === "" && r.left === 5) || JSON.stringify(r))
+  await expectFail("일반 회원은 카테고리를 삭제할 수 없다", async () => { const [first] = await cats(); await as(U.alice, `select public.delete_category($1)`, [first.id]) }, /not_admin/)
+  await expect("관리자는 카테고리 순서를 바꿀 수 있다 (거꾸로)", async () => {
+    const before = await cats()
+    await as(U.admin, `select public.reorder_categories($1::uuid[])`, [before.map((c) => c.id).reverse()])
+    const after = await cats()
+    await as(U.admin, `select public.reorder_categories($1::uuid[])`, [before.map((c) => c.id)])
+    return { before: before.map((c) => c.name), after: after.map((c) => c.name) }
+  }, (r) => JSON.stringify(r.after) === JSON.stringify([...r.before].reverse()) || JSON.stringify(r))
+  await expectFail("일반 회원은 카테고리 순서를 바꿀 수 없다", async () => { const list = await cats(); await as(U.alice, `select public.reorder_categories($1::uuid[])`, [list.map((c) => c.id)]) }, /not_admin/)
 
   console.log("\n[설정]")
   await expect("누구나 배송 설정을 읽는다", () => anon(`select value from public.shop_settings where key = 'shipping'`), (r) => r.rows[0].value.fee === 3000 || JSON.stringify(r.rows))

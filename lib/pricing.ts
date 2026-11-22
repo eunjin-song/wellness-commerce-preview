@@ -7,12 +7,18 @@ export function unitPrice(product: Pick<Product, "price" | "colors" | "sizes">, 
   return product.price + colorExtra + sizeExtra
 }
 
-/** 할인율(%). 정가가 없거나 판매가보다 크지 않으면 null (할인 표시를 하지 않아요) */
-export function discountPercent(product: Pick<Product, "price" | "originalPrice">): number | null {
-  const original = product.originalPrice
-  if (!original || original <= product.price) return null
-  const percent = Math.round((1 - product.price / original) * 100)
-  return percent >= 1 ? percent : null
+/**
+ * 판매가 계산: 정가 × (100 − 할인율) ÷ 100 을 10원 단위로 내림. (예: 58,000원 · 15% → 49,300원)
+ * 서버(DB)도 똑같은 규칙으로 계산해서, 화면에서 미리 보여주는 값과 실제 저장되는 값이 항상 같아요.
+ */
+export function salePrice(listPrice: number, percent: number): number {
+  if (percent <= 0) return listPrice
+  return Math.floor((listPrice * (100 - percent)) / 1000) * 10
+}
+
+/** 보여줄 할인율(%). 할인이 없으면 null (할인 표시를 하지 않아요) */
+export function discountPercent(product: Pick<Product, "originalPrice" | "discountPercent">): number | null {
+  return product.originalPrice && product.discountPercent > 0 ? product.discountPercent : null
 }
 
 /** 옵션에 따라 가격이 달라지는 상품인지 (목록에서 "~"를 붙이는 기준) */

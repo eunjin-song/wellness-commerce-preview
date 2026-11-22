@@ -22,6 +22,12 @@ export function toKoreanError(error: unknown, fallback = "잠시 후 다시 시�
     product_unavailable: "판매가 종료되었거나 없는 상품이 있어요. 장바구니를 확인해 주세요.",
     order_not_found: "주문을 찾을 수 없어요.",
     cannot_cancel: "이 주문은 직접 취소할 수 없는 상태예요. 이미 취소됐거나 배송 준비가 시작됐을 수 있어요. 문의 게시판으로 알려주세요.",
+    not_admin: "관리자만 할 수 있어요.",
+    category_exists: "이미 같은 이름의 카테고리가 있어요.",
+    category_name_required: "카테고리 이름을 입력해 주세요.",
+    category_not_found: "카테고리를 찾을 수 없어요. 화면을 새로 고침한 뒤 다시 시도해 주세요.",
+    invalid_category: "목록에 없는 카테고리예요. 관리자 > 카테고리에서 먼저 추가해 주세요.",
+    discount_needs_list_price: "할인율을 쓰려면 정가를 입력해 주세요.",
     question_locked: "이미 답변이 달린 질문은 고칠 수 없어요. 삭제 후 다시 등록해 주세요.",
     order_cancelled: "이미 취소된 주문은 상태를 바꿀 수 없어요.",
   }

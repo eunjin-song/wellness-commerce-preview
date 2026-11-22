@@ -28,6 +28,7 @@ export interface ProductRow {
   category: string
   price: number
   original_price?: number | null
+  discount_percent?: number
   sort_order?: number
   images: string[]
   colors: ColorOption[]
@@ -130,6 +131,7 @@ export function mapProduct(row: ProductRow): Product {
     category: row.category,
     price: row.price,
     originalPrice: row.original_price ?? null,
+    discountPercent: row.discount_percent ?? 0,
     sortOrder: row.sort_order ?? 0,
     inStock: row.in_stock ?? (row.stock ?? 0) > 0,
     isActive: row.is_active ?? true,

@@ -6,6 +6,7 @@ import { PUBLIC_BUCKET } from "@/lib/supabase/config"
 import { useIsAdmin } from "@/lib/hooks"
 import { mapAccount, mapAdminProduct, mapOrder, mapReview, type ProductRow } from "@/lib/db/mappers"
 import { uploadImages } from "@/lib/storage"
+import { salePrice } from "@/lib/pricing"
 import type { Account, AdminProduct, Order, OrderStatus, Review } from "@/lib/types"
 
 /* 관리자 화면의 모든 조회·수정은 DB의 RLS가 "관리자인지" 다시 확인합니다. (화면에서 숨기는 것만으로 막지 않아요) */
@@ -42,6 +43,53 @@ export function useReorderProducts() {
   })
 }
 
+/** 카테고리 추가·이름 변경·삭제·순서 변경 (전부 관리자만 쓸 수 있는 서버 함수를 불러요) */
+export function useCategoryMutations() {
+  const queryClient = useQueryClient()
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["categories"] })
+    // 이름 변경·삭제는 상품의 카테고리도 바꾸므로 상품 목록도 새로 읽어요.
+    queryClient.invalidateQueries({ queryKey: ["admin", "products"] })
+    queryClient.invalidateQueries({ queryKey: ["products"] })
+  }
+
+  const add = useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await requireClient().rpc("add_category", { p_name: name })
+      if (error) throw error
+    },
+    onSuccess: refresh,
+  })
+
+  const rename = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await requireClient().rpc("rename_category", { p_id: id, p_name: name })
+      if (error) throw error
+    },
+    onSuccess: refresh,
+  })
+
+  /** 삭제하고, 미분류가 된 상품 수를 돌려줘요 */
+  const remove = useMutation({
+    mutationFn: async (id: string): Promise<number> => {
+      const { data, error } = await requireClient().rpc("delete_category", { p_id: id })
+      if (error) throw error
+      return typeof data === "number" ? data : 0
+    },
+    onSuccess: refresh,
+  })
+
+  const reorder = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await requireClient().rpc("reorder_categories", { p_ids: ids })
+      if (error) throw error
+    },
+    onSuccess: refresh,
+  })
+
+  return { add, rename, remove, reorder }
+}
+
 /** 홈 화면 상단에 크게 보여줄 대표 상품 id 목록 (비어 있으면 순서상 앞의 두 상품을 보여줘요) */
 export function useHomeFeatured() {
   const isAdmin = useIsAdmin()
@@ -72,10 +120,12 @@ export interface SaveProductInput {
   id: string
   name: string
   subtitle: string
+  /** 카테고리 이름 (목록에 있는 이름 또는 빈 값=미분류) */
   category: string
-  price: number
-  /** 할인 전 가격(정가). 없으면 null */
-  originalPrice: number | null
+  /** 정가. 할인이 없으면 이 값이 그대로 판매가예요. */
+  listPrice: number
+  /** 할인율(%). 0이면 할인 없음 */
+  discountPercent: number
   stock: number
   isActive: boolean
   /** 새로 고른 사진은 data URL, 기존 사진은 주소 */
@@ -100,8 +150,10 @@ export function useSaveProduct() {
           name: input.name,
           subtitle: input.subtitle,
           category: input.category,
-          price: input.price,
-          original_price: input.originalPrice,
+          // 판매가는 정가와 할인율로 계산해요. (DB가 같은 규칙으로 한 번 더 맞춰서, 어긋나게 저장될 수 없어요)
+          price: salePrice(input.listPrice, input.discountPercent),
+          original_price: input.discountPercent > 0 ? input.listPrice : null,
+          discount_percent: input.discountPercent,
           stock: input.stock,
           is_active: input.isActive,
           images,

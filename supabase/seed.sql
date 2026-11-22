@@ -5,6 +5,11 @@ insert into public.shop_settings (key, value)
 values ('shipping', '{"fee": 3000, "free_threshold": 50000}'::jsonb)
 on conflict (key) do nothing;
 
+-- 카테고리 (상품보다 먼저 만들어야 해요. 순서는 관리자 > 카테고리에서 바꿀 수 있어요)
+insert into public.categories (name, sort_order)
+values ($q$슬립 케어$q$, 1), ($q$스킨케어$q$, 2), ($q$이너뷰티$q$, 3), ($q$바디케어$q$, 4), ($q$라운지웨어$q$, 5)
+on conflict do nothing;
+
 insert into public.products
   (id, name, subtitle, category, price, stock, is_active, images, colors, sizes, ingredients, usage_guide, description)
 values

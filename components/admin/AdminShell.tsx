@@ -7,6 +7,7 @@ import { useRequireUser } from "@/lib/hooks"
 const TABS = [
   { href: "/admin", label: "대시보드" },
   { href: "/admin/products", label: "상품" },
+  { href: "/admin/categories", label: "카테고리" },
   { href: "/admin/orders", label: "주문" },
   { href: "/admin/qna", label: "Q&A" },
   { href: "/admin/reviews", label: "후기" },

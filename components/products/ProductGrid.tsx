@@ -14,8 +14,12 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "name", label: "이름순" },
 ]
 
-export default function ProductGrid({ products }: { products: Product[] }) {
-  const categories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean)
+/**
+ * categoryOrder: 관리자가 정한 카테고리 순서. 이 순서대로 탭을 보여주고,
+ * 상품이 하나도 없는 카테고리는 숨겨요. (목록에 없는 카테고리의 상품은 '전체'에서만 보여요)
+ */
+export default function ProductGrid({ products, categoryOrder }: { products: Product[]; categoryOrder: string[] }) {
+  const categories = useMemo(() => categoryOrder.filter((name) => products.some((p) => p.category === name)), [categoryOrder, products])
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()

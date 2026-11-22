@@ -2,13 +2,14 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import ProductGrid from "@/components/products/ProductGrid"
 import ServerNotice from "@/components/layout/ServerNotice"
-import { getPublicProducts } from "@/lib/db/public"
+import { getCategoryNames, getPublicProducts } from "@/lib/db/public"
 
 export const metadata: Metadata = { title: "SHOP — ooro." }
 export const revalidate = 30
 
 export default async function ProductListPage() {
   const { products, configured, failed } = await getPublicProducts()
+  const categoryOrder = await getCategoryNames()
 
   return (
     <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-14 md:px-10 md:pt-20">
@@ -20,7 +21,7 @@ export default async function ProductListPage() {
 
       {configured && !failed ? (
         <Suspense fallback={null}>
-          <ProductGrid products={products} />
+          <ProductGrid products={products} categoryOrder={categoryOrder} />
         </Suspense>
       ) : (
         <ServerNotice configured={configured} />

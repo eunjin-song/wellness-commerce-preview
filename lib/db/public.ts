@@ -49,3 +49,19 @@ export async function getHomeFeaturedIds(): Promise<string[]> {
   const ids = (data?.value as { ids?: unknown } | null)?.ids
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : []
 }
+
+/**
+ * 카테고리 이름 목록 (관리자가 정한 순서). 고객 화면의 카테고리 탭에 써요.
+ * 불러오지 못하면 빈 배열이라서, 화면은 '전체'만 보여줘요.
+ */
+export async function getCategoryNames(): Promise<string[]> {
+  const supabase = createPublicClient()
+  if (!supabase) return []
+
+  const { data, error } = await supabase.from("categories").select("name").order("sort_order", { ascending: true })
+  if (error) {
+    console.error("카테고리를 불러오지 못했어요:", error.message)
+    return []
+  }
+  return (data as { name: string }[]).map((c) => c.name)
+}

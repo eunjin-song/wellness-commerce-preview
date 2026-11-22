@@ -24,9 +24,9 @@ ooro. 쇼핑몰의 회원·상품·주문·후기·Q&A·사진은 **Supabase**�
 2. 이 저장소의 `supabase/migrations/0001_init.sql` 파일을 열어 **전체 복사** → 붙여넣기 → **Run**
    - 아래쪽에 `Success. No rows returned` 가 나오면 성공이에요.
    - 이어서 같은 방식으로 `supabase/migrations/0002_public_question_photos_for_visitors.sql` 도 실행하세요. 실행할 때 "destructive operations(파괴적 작업)" 경고가 한 번 떠요. 옛 규칙을 지우고 같은 이름으로 다시 만드는 문장(`drop policy`) 때문이라 정상이고, 그대로 **Run query** 를 누르면 돼요.
-   - 그다음 `0003_stock_and_order_cancel.sql`(재고 차감·주문 취소), `0004_edit_delete_own_posts.sql`(후기·Q&A 수정/삭제), `0005_product_order_and_discount.sql`(상품 노출 순서·할인 정보·홈 대표 상품)도 번호 순서대로 각각 실행하세요.
+   - 그다음 `0003_stock_and_order_cancel.sql`(재고 차감·주문 취소), `0004_edit_delete_own_posts.sql`(후기·Q&A 수정/삭제), `0005_product_order_and_discount.sql`(상품 노출 순서·정가·홈 대표 상품), `0006_discount_rate.sql`(할인율로 판매가 자동 계산), `0007_categories.sql`(카테고리 관리)도 번호 순서대로 각각 실행하세요. 0007에는 카테고리를 지우는 기능(`delete`)이 들어 있어서 "destructive operations" 경고가 한 번 떠요. 정상이니 **Run query** 를 누르면 돼요.
 3. 다시 **New query** → `supabase/seed.sql` 전체 복사 → 붙여넣기 → **Run**
-   - 샘플 상품 6개와 배송비 설정(3,000원 / 5만 원 이상 무료)이 들어가요.
+   - 샘플 카테고리 5개, 샘플 상품 6개와 배송비 설정(3,000원 / 5만 원 이상 무료)이 들어가요.
 
 ## 3단계. 로그인 설정
 
@@ -87,7 +87,7 @@ Supabase 기본 메일은 발송량이 아주 적고(시간당 몇 통), 프로�
 1주일 동안 접속이 없으면 무료 프로젝트가 일시 정지돼요. 대시보드에서 **Restore project** 를 누르면 돼요.
 
 **데이터베이스를 고치고 싶어요.**
-`supabase/migrations/` 에 새 번호의 파일(`0006_...sql`)을 만들어 SQL Editor에서 실행하세요.
+`supabase/migrations/` 에 새 번호의 파일(`0008_...sql`)을 만들어 SQL Editor에서 실행하세요.
 고친 뒤에는 `npm run db:test` 로 보안 규칙이 그대로인지 꼭 확인해요.
 (새 함수를 만들면 마지막에 `revoke execute ... from public, anon, authenticated;` 로 먼저 막고, 필요한 역할에만 `grant` 하세요.)
 
