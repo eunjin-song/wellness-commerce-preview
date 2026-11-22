@@ -29,9 +29,17 @@ const failures = []
 const ok = (name) => { passed++; console.log("  PASS", name) }
 const bad = (name, detail) => { failures.push(name); console.log("  FAIL", name, "→", detail) }
 
+// Supabase 새 프로젝트 화면의 "Automatically expose new tables" 옵션을 흉내 냅니다.
+//   기본(켬): 새 표가 만들어지면 자동으로 권한이 열려요.   npm run db:test
+//   끔:       자동으로 열리는 권한이 없어요.             AUTO_EXPOSE=off npm run db:test
+// 우리 SQL은 어느 쪽이어도 같은 결과여야 해요(필요한 권한을 SQL이 직접 주기 때문).
+const autoExpose = process.env.AUTO_EXPOSE !== "off"
+console.log(`자동 노출 옵션: ${autoExpose ? "켬" : "끔"}\n`)
+const withoutAutoExpose = (sql) => (autoExpose ? sql : sql.replace(/alter default privileges[^;]+;/g, ""))
+
 try {
   // ---------- Supabase 흉내 (역할, auth, storage) ----------
-  await c.query(`
+  await c.query(withoutAutoExpose(`
     create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;
     grant usage on schema public to anon, authenticated, service_role;
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
@@ -52,7 +60,7 @@ try {
     grant all on storage.objects, storage.buckets to anon, authenticated, service_role;
     create function storage.foldername(name text) returns text[] language plpgsql as $$
       declare _parts text[]; begin _parts := string_to_array(name, '/'); return _parts[1:array_length(_parts, 1) - 1]; end $$;
-  `)
+  `))
 
   // ---------- 마이그레이션 + 시드 ----------
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0001_init.sql`, "utf8"))

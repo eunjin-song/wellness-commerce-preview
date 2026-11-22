@@ -35,20 +35,25 @@ export const STATUS_LABEL: Record<Status, string> = {
   todo: "미구현",
 }
 
-export const LAST_UPDATED = "2026-11-04"
+export const LAST_UPDATED = "2026-11-22"
 
 /** 지금 상태를 한눈에 */
 export const OVERVIEW: { label: string; value: string }[] = [
   { label: "운영 주소", value: "www.ooro.store — 커밍순 페이지만 공개 중이에요. 전체 사이트는 아직 공개 전이에요." },
   { label: "작업 브랜치", value: "dev — 모든 작업이 저장돼 있어요. Vercel '미리보기' 주소에서 전체 사이트를 볼 수 있어요." },
-  { label: "서버(Supabase)", value: "연결 코드는 완성. 프로젝트 연결은 확인되지 않았어요. (이 컴퓨터에 연결 정보 파일이 없어요)" },
+  {
+    label: "서버(Supabase)",
+    value:
+      "프로젝트 'ooro'(서울) 생성·DB 구축·샘플 상품 입력·로그인 주소 설정 완료. 내 컴퓨터(localhost)에서 주문→배송 완료→후기→Q&A→관리자 답변까지 실제 서버로 시험 통과. 아직 Vercel(미리보기 주소)에는 연결 정보를 넣지 않았어요.",
+  },
   { label: "자동 점검", value: "린트·빌드 통과, DB 보안 시험 80개 통과" },
+  { label: "시험용 계정", value: "Supabase에 시험용 회원 2개(구매자·관리자, qa-*@example.com)가 있어요. 정식 오픈 전에 지워야 해요." },
 ]
 
 /** 작업을 이어서 할 때 */
 export const RESUME_STEPS: string[] = [
   "작업 폴더: C:\\Users\\송은진\\wellness-commerce-preview (브랜치: dev)",
-  "내 컴퓨터에서 보기: 터미널에서 npm run dev → 브라우저에서 http://localhost:3000 (서버 연결 전에는 상품 자리에 안내가 나와요)",
+  "내 컴퓨터에서 보기: 터미널에서 npm run dev → 브라우저에서 http://localhost:3000 (연결 정보는 .env.local, 이 파일은 GitHub에 올라가지 않아요)",
   "점검하기: npm run lint · npm run build · npm run db:test",
   "올리기: dev 브랜치에 push → Vercel > Deployments 에서 dev 항목의 Visit 으로 확인",
   "이 체크리스트 최신화: docs/implementation-status.ts 수정 후 npm run implementation (또는 Claude에게 '체크리스트 갱신해줘')",
@@ -56,8 +61,10 @@ export const RESUME_STEPS: string[] = [
 
 /** 다음에 할 일 (추천 순서) */
 export const NEXT_STEPS: string[] = [
-  "Supabase 프로젝트 만들고 사이트에 연결하기 — supabase/README.md 순서대로 (계정 생성은 직접 해야 해요)",
-  "연결 후 가입 → 메일 인증 → 상품 → 주문 → 후기 → Q&A → 관리자 흐름을 처음부터 끝까지 시험하기 (Claude가 같이 진행)",
+  "Vercel 환경 변수 2개(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) 넣고 다시 배포 → 미리보기 주소에서도 상품이 보이는지 확인",
+  "메일 서비스(Resend) 확정·연결 — 지금은 Supabase 기본 메일이라 이메일 문구를 못 바꾸고 팀원 주소로만 발송돼요. 연결해야 실제 가입 인증 메일 시험·문구 적용이 가능해요",
+  "내 진짜 이메일로 가입해서 관리자로 지정하고, 시험용 회원 2개 삭제",
+  "남은 시험: 회원가입·메일 인증·비밀번호 재설정, 찜, 배송지 관리 탭, 회원 탈퇴, 상품 등록·수정, 카카오 주소 검색 팝업",
   "동업자 확인이 필요한 항목 정하기 — 메일 서비스(Resend), 배송비 정책 등 (OPEN_ITEMS.md)",
   "홈·브랜드 소개 페이지 디자인 다듬기 — 참고 사이트나 캡처가 있으면 더 정확해요",
   "약관·사업자 정보 → 결제(PG) → 정식 오픈",
@@ -113,7 +120,7 @@ export const GROUPS: Group[] = [
       {
         title: "푸터(하단)",
         status: "temp",
-        note: "로고와 소개 문구는 있어요. 사업자 정보·약관 링크가 없고, '목업 데이터로 동작합니다'라는 옛 문구가 아직 남아 있어요.",
+        note: "로고와 소개 문구가 있어요. 옛 '목업 데이터' 문구는 없앴고, 사업자 정보·약관 링크는 아직 없어요.",
         where: "components/layout/Footer.tsx",
       },
     ],
@@ -124,20 +131,20 @@ export const GROUPS: Group[] = [
     items: [
       {
         title: "상품 목록 + 카테고리 필터",
-        status: "test",
-        note: "서버에서 '판매 중'인 상품만 읽어와요. 30초마다 새로 가져와서, 관리자가 바꾼 내용이 곧 반영돼요.",
+        status: "done",
+        note: "서버에서 '판매 중'인 상품만 읽어와요(실제 서버에서 6개 표시 확인). 30초마다 새로 가져와서, 관리자가 바꾼 내용이 곧 반영돼요. 카테고리 버튼 눌러보기는 아직 못 해봤어요.",
         where: "app/products/page.tsx, lib/db/public.ts",
       },
       {
         title: "상품 상세 (사진 갤러리·성분·탭)",
-        status: "test",
-        note: "큰 사진/작은 사진 전환, 핵심 성분 박스, '상세 정보 · 사용 방법 · 후기 · Q&A' 4개 탭으로 구성했어요.",
+        status: "done",
+        note: "큰 사진/작은 사진 전환, 핵심 성분 박스, '상세 정보 · 사용 방법 · 후기 · Q&A' 4개 탭으로 구성했어요. 실제 서버 데이터로 탭 전환·후기·Q&A까지 확인했어요.",
         where: "components/products/ProductDetailView.tsx",
       },
       {
         title: "색상·사이즈 선택",
-        status: "test",
-        note: "옵션이 있는 상품에서만 선택칸이 나와요. 고르지 않고 담으려 하면 안내 문구가 떠요.",
+        status: "done",
+        note: "옵션이 있는 상품에서만 선택칸이 나와요. 고르지 않고 담으려 하면 안내 문구가 떠요. 실제 서버 상품에서 차콜(+10,000원)·M·수량 2개를 골라 담아 확인했어요.",
         where: "components/products/ProductPurchasePanel.tsx",
       },
       {
@@ -149,7 +156,7 @@ export const GROUPS: Group[] = [
       {
         title: "재고 비공개·품절 표시",
         status: "done",
-        note: "고객용 데이터에는 재고 숫자 칸이 아예 없고 '품절 여부'만 내려가요(DB 시험으로 확인). 품절 상품의 '일시 품절' 표시와 버튼 꺼짐은 서버 연결 후 한 번 더 봐야 해요.",
+        note: "고객용 데이터에는 재고 숫자 칸이 아예 없고 '품절 여부'만 내려가요. 실제 서버에서 로그인 없이 재고 표를 읽으려 하면 거부되는 것과, 품절 상품에 '일시 품절'이 뜨는 것을 확인했어요.",
         where: "products_public 뷰 (0001_init.sql)",
       },
       {
@@ -171,8 +178,8 @@ export const GROUPS: Group[] = [
     items: [
       {
         title: "장바구니",
-        status: "test",
-        note: "같은 상품도 색상·사이즈가 다르면 따로 담겨요. 이 브라우저에만 저장돼서 다른 기기에서는 안 보이고, 로그인 없이도 담을 수 있어요. 담기·수량·삭제는 서버 연결 전에 확인했고, 이후 배송비를 서버 설정에서 읽도록 바꿔서 다시 확인이 필요해요.",
+        status: "done",
+        note: "같은 상품도 색상·사이즈가 다르면 따로 담겨요. 이 브라우저에만 저장돼서 다른 기기에서는 안 보이고, 로그인 없이도 담을 수 있어요. 실제 서버 연결 후 담기·수량·옵션 표시·합계·무료배송 표시를 확인했어요(삭제 버튼은 이번엔 안 눌러봤어요).",
         where: "lib/store/cart.ts, app/cart/page.tsx",
       },
       {
@@ -189,20 +196,20 @@ export const GROUPS: Group[] = [
       },
       {
         title: "주문서 (배송지 선택·추가·메모)",
-        status: "test",
-        note: "기본 배송지가 자동으로 선택돼요. 로그인이 필요하고, 배송지가 없으면 그 자리에서 추가할 수 있어요.",
+        status: "done",
+        note: "기본 배송지가 자동으로 선택돼요. 로그인이 필요하고, 배송지가 없으면 그 자리에서 추가할 수 있어요. 실제 서버에서 배송지를 직접 입력해 저장하면 '기본'으로 지정되는 것까지 확인했어요. 카카오 주소 검색 팝업은 아직 못 눌러봤어요.",
         where: "components/checkout/CheckoutView.tsx",
       },
       {
         title: "주문 만들기 (서버 계산)",
-        status: "test",
-        note: "브라우저가 보낸 가격은 무시하고, 서버 함수(place_order)가 상품 가격·옵션·재고·배송비를 다시 계산해요. 이 함수는 DB 시험을 통과했고, 화면과의 연결은 서버 연결 후 확인이 필요해요.",
+        status: "done",
+        note: "브라우저가 보낸 가격은 무시하고, 서버 함수(place_order)가 상품 가격·옵션·재고·배송비를 다시 계산해요. DB 시험을 통과했고, 실제 서버에서 276,000원 주문이 만들어져 화면 예상 금액과 서버 확정 금액이 같은 것도 확인했어요.",
         where: "place_order 함수 (0001_init.sql), lib/queries/account.ts",
       },
       {
         title: "주문 내역 (마이페이지)",
-        status: "test",
-        note: "내 주문만 최신순으로 보여줘요. 상품·옵션·수량·받는 분·금액·상태가 나와요.",
+        status: "done",
+        note: "내 주문만 최신순으로 보여줘요. 상품·옵션·수량·받는 분·배송 메모·금액·상태가 나오는 것을 실제 서버 주문으로 확인했어요.",
         where: "components/mypage/OrderHistory.tsx",
       },
       {
@@ -245,13 +252,13 @@ export const GROUPS: Group[] = [
       {
         title: "이메일 인증",
         status: "test",
-        note: "가입하면 인증 메일이 가고, 링크를 눌러야 가입이 끝나요. 가입·비밀번호 재설정·이메일 변경 메일 3종을 우리 디자인으로 만들어 뒀어요.",
+        note: "가입하면 인증 메일이 가고, 링크를 눌러야 가입이 끝나요. 가입·비밀번호 재설정·이메일 변경 메일 3종을 우리 디자인으로 만들어 뒀지만, Supabase는 직접 연결한 메일 서버(SMTP)가 있어야만 문구를 바꿀 수 있어서 아직 적용하지 못했어요. 실제 메일이 오는 시험도 메일 서비스 연결 뒤에 해야 해요.",
         where: "app/auth/confirm/route.ts, supabase/email-templates/",
       },
       {
         title: "로그인·로그아웃",
-        status: "test",
-        note: "로그아웃을 누를 때까지 로그인이 유지돼요(확정). 인증 전에 로그인하면 '인증 메일 다시 받기' 버튼이 나와요.",
+        status: "done",
+        note: "로그아웃을 누를 때까지 로그인이 유지돼요(확정). 실제 서버에서 로그인·로그아웃·계정 전환을 여러 번 확인했어요. 인증 전에 로그인하면 나오는 '인증 메일 다시 받기' 버튼은 아직 못 봤어요.",
         where: "components/auth/LoginForm.tsx, lib/auth.tsx",
       },
       {
@@ -302,26 +309,26 @@ export const GROUPS: Group[] = [
     items: [
       {
         title: "구매 후기 작성",
-        status: "test",
-        note: "내 주문이 '배송 완료'일 때만, 주문 1건당 후기 1개, 사진은 최대 3장이에요. 화면과 DB 양쪽에서 막고, DB 시험으로 확인했어요.",
+        status: "done",
+        note: "내 주문이 '배송 완료'일 때만, 주문 1건당 후기 1개, 사진은 최대 3장이에요. 화면과 DB 양쪽에서 막아요. 실제 서버에서 배송 완료 후 별점·글·사진 1장으로 등록하고 '이미 후기를 남기셨어요'가 뜨는 것까지 확인했어요.",
         where: "components/products/ReviewSection.tsx",
       },
       {
         title: "후기 목록·평균 별점",
-        status: "test",
-        note: "작성자 이름은 가운데를 별표로 가려서(홍*동) 보여줘요. 관리자가 숨긴 후기는 고객에게 안 보여요.",
+        status: "done",
+        note: "작성자 이름은 가운데를 별표로 가려서(홍*동) 보여줘요. 관리자가 숨긴 후기는 고객에게 안 보여요. 실제 서버에서 평균 5.0과 후기 목록 표시는 확인했고, 시험 계정은 이름이 비어 있어 이름 가림은 이름 있는 계정으로 한 번 더 봐야 해요.",
         where: "lib/queries/community.ts",
       },
       {
         title: "Q&A (상품별 탭 + 전체 게시판)",
         status: "test",
-        note: "상품 페이지의 Q&A 탭과 /qna 게시판이 같은 데이터를 써요. 상품과 무관한 일반 문의도 가능하고, 사진은 최대 3장이에요.",
+        note: "상품 페이지의 Q&A 탭과 /qna 게시판이 같은 데이터를 써요. 상품과 무관한 일반 문의도 가능하고, 사진은 최대 3장이에요. 상품 페이지에서 질문 등록은 실제 서버로 확인했고, /qna 게시판 화면과 사진 첨부는 아직 못 해봤어요.",
         where: "components/qna/, app/qna/page.tsx",
       },
       {
         title: "비밀글",
-        status: "test",
-        note: "작성자와 관리자만 내용을 볼 수 있고, 다른 사람에게는 '비밀글입니다.'만 보여요. 첨부 사진도 같은 규칙(비공개 저장소 + 1시간짜리 임시 주소)이에요. 규칙은 DB 시험으로 확인했어요.",
+        status: "done",
+        note: "작성자와 관리자만 내용을 볼 수 있고, 다른 사람에게는 '비밀글입니다.'만 보여요(답변도 가려요). 첨부 사진도 같은 규칙(비공개 저장소 + 1시간짜리 임시 주소)이에요. 실제 서버에 비밀글을 쓰고, 로그인 안 한 상태로 읽으면 가려지는 것과 관리자 화면에서는 보이는 것을 확인했어요. 사진 부분은 아직이에요.",
         where: "questions_feed 뷰 (0001_init.sql)",
       },
       {
@@ -349,14 +356,14 @@ export const GROUPS: Group[] = [
     items: [
       {
         title: "관리자 권한",
-        status: "test",
-        note: "DB의 회원 정보(role)로 정하고, SQL로만 지정할 수 있어요. 관리자가 아니면 화면이 막히고 관리자용 데이터도 서버가 아예 내려주지 않아요.",
+        status: "done",
+        note: "DB의 회원 정보(role)로 정하고, SQL로만 지정할 수 있어요. 관리자가 아니면 화면이 막히고 관리자용 데이터도 서버가 아예 내려주지 않아요. 실제 서버에서 SQL로 관리자를 지정해 관리자 화면에 들어가는 것을 확인했고, 일반 회원 차단은 DB 시험으로 확인했어요.",
         where: "components/admin/AdminShell.tsx, profiles 표",
       },
       {
         title: "대시보드",
-        status: "test",
-        note: "처리할 주문·답변 대기 Q&A·판매 중 상품·후기 숫자, 최근 주문, 배송비 설정, '오픈 전 확인 목록'이 나와요.",
+        status: "done",
+        note: "처리할 주문·답변 대기 Q&A·판매 중 상품·후기 숫자, 최근 주문, 배송비 설정, '오픈 전 확인 목록'이 나와요. 실제 서버 숫자로 표시되는 것을 확인했어요(배송비 저장 버튼은 아직 안 눌러봤어요).",
         where: "components/admin/Dashboard.tsx",
       },
       {
@@ -367,14 +374,14 @@ export const GROUPS: Group[] = [
       },
       {
         title: "주문 관리",
-        status: "test",
-        note: "상태별로 걸러 보고, 상태를 바꿔요(주문 접수 → 결제 완료 → 배송 준비중 → 배송중 → 배송 완료 → 취소). '배송 완료'로 바꾸면 고객이 후기를 쓸 수 있어요.",
+        status: "done",
+        note: "상태별로 걸러 보고, 상태를 바꿔요(주문 접수 → 결제 완료 → 배송 준비중 → 배송중 → 배송 완료 → 취소). 실제 서버에서 다른 회원의 주문을 보고 '배송 완료'로 바꾸자 그 회원이 후기를 쓸 수 있게 되는 것까지 확인했어요.",
         where: "components/admin/AdminOrders.tsx",
       },
       {
         title: "Q&A 답변",
-        status: "test",
-        note: "답변 대기 목록에서 바로 답변하고 수정할 수 있어요. 비밀글과 첨부 사진도 볼 수 있어요.",
+        status: "done",
+        note: "답변 대기 목록에서 바로 답변하고 수정할 수 있어요. 실제 서버에서 비밀글을 읽고 답변을 등록해 '답변 대기'가 0으로 줄어드는 것을 확인했어요. 작성자 화면에서 답변이 보이는 것은 DB 시험으로 확인했고 화면으로는 아직이에요.",
         where: "components/admin/AdminQna.tsx",
       },
       {
@@ -414,7 +421,7 @@ export const GROUPS: Group[] = [
       {
         title: "사진 저장소",
         status: "test",
-        note: "공개(상품·후기 사진)와 비공개(Q&A 사진) 2개예요. 올릴 수 있는 사람의 규칙은 시험을 통과했고, 실제 업로드는 서버 연결 후 확인이 필요해요.",
+        note: "공개(상품·후기 사진)와 비공개(Q&A 사진) 2개예요. 올릴 수 있는 사람의 규칙은 시험을 통과했고, 실제 서버에서 후기 사진 업로드·표시를 확인했어요. 비공개(Q&A) 사진과 관리자 상품 사진 업로드는 아직이에요.",
         where: "lib/storage.ts",
       },
       {
@@ -424,15 +431,26 @@ export const GROUPS: Group[] = [
         where: "supabase/seed.sql",
       },
       {
-        title: "Supabase 프로젝트 만들기·연결",
-        status: "todo",
-        note: "계정을 직접 만들어야 해서 아직이에요. 이 컴퓨터에는 연결 정보 파일(.env.local)이 없고, Vercel에 넣었는지는 확인하지 못했어요. 순서는 supabase/README.md에 있어요.",
+        title: "Supabase 프로젝트 만들기·DB 구축",
+        status: "done",
+        note: "프로젝트 'ooro'(서울 리전)를 만들고 DB 설계·샘플 상품을 SQL로 넣었어요. 로그인 설정은 Site URL을 www.ooro.store로 바꾸고 허용 주소(Redirect URL) 4개를 넣었어요. 무료 플랜이라 접속이 없으면 정지돼요(요금제 결정은 확인 목록에 있어요).",
         where: "supabase/README.md",
+      },
+      {
+        title: "사이트에 Supabase 연결",
+        status: "test",
+        note: "내 컴퓨터(localhost)는 .env.local로 연결해 시험을 마쳤어요. Vercel(미리보기·운영 주소)에는 환경 변수 2개를 아직 넣지 않아서, 그 주소에서는 상품이 안 보여요.",
+        where: ".env.local, Vercel > Settings > Environment Variables",
       },
       {
         title: "가입·재설정 메일 발송 서비스",
         status: "todo",
-        note: "Resend로 잠정 결정했고, 동업자 확인 뒤 연결해요. 연결 전에는 인증 메일이 시간당 몇 통만 가요.",
+        note: "Resend로 잠정 결정했고, 동업자 확인 뒤 연결해요. 지금은 Supabase 기본 메일이라 (1) 이메일 문구·디자인을 바꿀 수 없고 (2) 프로젝트 팀원 이메일로만 보낼 수 있어요. 그래서 메일 서비스를 연결하기 전에는 일반 고객이 가입할 수 없어요.",
+      },
+      {
+        title: "시험용 회원 정리",
+        status: "todo",
+        note: "시험하려고 Supabase에 만든 가짜 회원 2명(구매자·관리자)과 그 주문·후기·Q&A가 남아 있어요. 정식 오픈 전에 지워야 해요.",
       },
     ],
   },

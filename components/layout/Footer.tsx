@@ -10,7 +10,7 @@ export default function Footer() {
           쉴 수 있도록, 정직한 성분과 절제된 만듦새로 제품을 만듭니다.
         </p>
         <p className="mt-10 border-t border-cream/25 pt-6 text-xs">
-          © 2026 ooro. 본 페이지는 설계 미리보기용으로, 목업 데이터로 동작합니다.
+          © 2026 ooro. All rights reserved.
         </p>
       </div>
     </footer>
