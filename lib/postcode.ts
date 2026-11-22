@@ -27,7 +27,8 @@ declare global {
   }
 }
 
-const SCRIPT_SRC = "https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
+// 카카오 안내: t1.daumcdn.net 은 2026-11-30 에 종료돼서 t1.kakaocdn.net 으로 옮겼어요.
+const SCRIPT_SRC = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"
 
 export function loadPostcode(): Promise<void> {
   if (window.daum?.Postcode) return Promise.resolve()

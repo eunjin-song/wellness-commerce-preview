@@ -23,6 +23,7 @@ ooro. 쇼핑몰의 회원·상품·주문·후기·Q&A·사진은 **Supabase**�
 1. 왼쪽 메뉴 **SQL Editor** → **New query**
 2. 이 저장소의 `supabase/migrations/0001_init.sql` 파일을 열어 **전체 복사** → 붙여넣기 → **Run**
    - 아래쪽에 `Success. No rows returned` 가 나오면 성공이에요.
+   - 이어서 같은 방식으로 `supabase/migrations/0002_public_question_photos_for_visitors.sql` 도 실행하세요. 실행할 때 "destructive operations(파괴적 작업)" 경고가 한 번 떠요. 옛 규칙을 지우고 같은 이름으로 다시 만드는 문장(`drop policy`) 때문이라 정상이고, 그대로 **Run query** 를 누르면 돼요.
 3. 다시 **New query** → `supabase/seed.sql` 전체 복사 → 붙여넣기 → **Run**
    - 샘플 상품 6개와 배송비 설정(3,000원 / 5만 원 이상 무료)이 들어가요.
 

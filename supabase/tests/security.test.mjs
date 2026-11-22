@@ -64,6 +64,7 @@ try {
 
   // ---------- 마이그레이션 + 시드 ----------
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0001_init.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0002_public_question_photos_for_visitors.sql`, "utf8"))
   console.log("마이그레이션 적용 완료")
   await c.query(fs.readFileSync(`${repo}/supabase/seed.sql`, "utf8"))
   console.log("시드 적용 완료\n")
@@ -301,6 +302,8 @@ try {
     await as(U.alice, `insert into public.questions (title, content, is_secret, images) values ('사진 질문', '내용', false, array['${U.alice}/open.jpg'])`)
     return as(U.bob, `select name from storage.objects where bucket_id = 'question-photos'`)
   }, (r) => (r.rows.length === 1 && r.rows[0].name.endsWith("open.jpg")) || JSON.stringify(r.rows))
+  await expect("Q&A 사진: 로그인 안 한 방문자도 공개 질문의 사진은 본다 (비밀글·미첨부 사진은 못 본다)", () => anon(`select name from storage.objects where bucket_id = 'question-photos'`), (r) => (r.rows.length === 1 && r.rows[0].name.endsWith("open.jpg")) || JSON.stringify(r.rows))
+  await expectFail("Q&A 사진: 방문자는 사진을 올릴 수 없다", () => anon(`insert into storage.objects (bucket_id, name) values ('question-photos', '${U.alice}/anon.jpg')`), /row-level security|permission denied/)
 
   console.log("\n[회원 탈퇴]")
   await expect("탈퇴해도 주문 기록은 남고 user_id 만 비워진다", async () => {
