@@ -8,7 +8,7 @@ export default function ProductGallery({ images, alt }: { images: string[]; alt:
 
   return (
     <div>
-      <div className="relative aspect-square overflow-hidden rounded-3xl bg-brown/10">
+      <div className="relative aspect-square overflow-hidden rounded-md bg-brown/10">
         <Image
           key={images[active]}
           src={images[active]}
@@ -27,7 +27,7 @@ export default function ProductGallery({ images, alt }: { images: string[]; alt:
               key={src + i}
               onClick={() => setActive(i)}
               aria-label={`이미지 ${i + 1} 보기`}
-              className={`relative h-20 w-20 overflow-hidden rounded-xl transition
+              className={`relative h-20 w-20 overflow-hidden rounded transition
                 ${i === active ? "ring-2 ring-brown" : "opacity-60 hover:opacity-100"}`}
             >
               <Image src={src} alt="" fill className="object-cover" sizes="80px" />

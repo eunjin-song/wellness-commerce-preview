@@ -93,7 +93,8 @@ export default function CheckoutView() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-display text-3xl">주문서</h1>
+      <p className="eyebrow">Checkout</p>
+      <h1 className="mt-3 font-display text-4xl">주문서</h1>
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold">주문 상품</h2>

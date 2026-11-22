@@ -27,7 +27,8 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-24 text-center">
-        <h1 className="font-display text-3xl">장바구니</h1>
+        <p className="eyebrow">Cart</p>
+        <h1 className="mt-3 font-display text-4xl">장바구니</h1>
         <p className="mt-6">장바구니가 비어 있어요.</p>
         <Link href="/products" className="btn-outline mt-8">
           상품 둘러보기
@@ -43,7 +44,8 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
-      <h1 className="font-display text-3xl">장바구니</h1>
+      <p className="eyebrow">Cart</p>
+      <h1 className="mt-3 font-display text-4xl">장바구니</h1>
 
       <ul className="mt-10 divide-y divide-brown/20">
         {items.map((item) => (

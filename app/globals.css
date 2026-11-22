@@ -50,6 +50,17 @@ body {
   .field-error {
     @apply mt-2 text-sm font-medium;
   }
+  /* 카테고리 같은 글자 탭: 선택된 것만 밑줄 */
+  .cat-tab {
+    @apply border-b border-transparent px-1 pb-1.5 text-sm transition hover:border-brown/40;
+  }
+  .cat-tab[aria-pressed="true"] {
+    @apply border-brown font-medium;
+  }
+  /* 작은 영문 라벨 (제목 위에 얹는 글자) */
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.25em];
+  }
   .chip {
     @apply rounded-full border border-brown/25 px-4 py-2 text-sm transition hover:border-brown;
   }
