@@ -44,9 +44,11 @@ export default function ProductCard({ product }: { product: Product }) {
               sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 46vw"
             />
           )}
+          {/* 품절: 사진은 그대로 두고, 사진 맨 아래에 사진 폭만큼의 흰 띠로 SOLD OUT 을 가운데 정렬해요 */}
           {!product.inStock && (
-            <div className="absolute inset-0 flex items-center justify-center bg-cream/60">
-              <span className="rounded-full bg-brown px-4 py-1.5 text-xs text-paper">일시 품절</span>
+            <div className="absolute inset-x-0 bottom-0 bg-cream py-2.5 text-center text-xs font-medium tracking-[0.25em] md:py-3">
+              SOLD OUT
+              <span className="sr-only"> (일시 품절)</span>
             </div>
           )}
         </div>

@@ -155,7 +155,12 @@ export default function ProductPurchasePanel({ product }: { product: Product }) 
             +
           </button>
         </div>
-        {soldOut && <p className="mt-2 text-sm font-medium">일시 품절</p>}
+        {soldOut && (
+          <p className="mt-2 text-sm font-medium tracking-[0.2em]">
+            SOLD OUT
+            <span className="sr-only"> (일시 품절)</span>
+          </p>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-brown/25 pt-4">
