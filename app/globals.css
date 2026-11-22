@@ -12,7 +12,8 @@
   --color-brown: #7a6855;
   --color-paper: #f6f5f2;
 
-  --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
+  /* 폰트는 Pretendard 하나만 써요. 제목(font-display)도 같은 폰트이고, 굵기·크기·자간으로 위계를 만들어요. */
+  --font-display: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Malgun Gothic", sans-serif;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Malgun Gothic", sans-serif;
 
   --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
@@ -35,6 +36,12 @@ body {
 }
 
 @layer components {
+  /* 제목 스타일: 약간 굵게(600) + 촘촘한 자간. 한글은 단어 단위로 줄이 바뀌게 해서 깔끔하게 보여요. */
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    word-break: keep-all;
+  }
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-full bg-brown px-6 py-3 text-sm font-medium text-paper transition duration-300 ease-gentle hover:bg-brown/85 disabled:cursor-not-allowed disabled:opacity-40;
   }

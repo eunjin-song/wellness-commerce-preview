@@ -111,6 +111,12 @@ export const GROUPS: Group[] = [
         where: "app/globals.css",
       },
       {
+        title: "폰트 (Pretendard 하나만)",
+        status: "done",
+        note: "세리프체(Cormorant Garamond)를 없애고 Pretendard 하나로 통일했어요. 큰 제목은 굵기 600 + 촘촘한 자간 + 한글 단어 단위 줄바꿈으로 위계를 만들고, 본문·메뉴·버튼은 기본 굵기예요. 폰트는 CDN(jsDelivr)에서 불러와요. 제목 스타일은 app/globals.css 의 .font-display 한 곳에서 바꿀 수 있어요.",
+        where: "app/globals.css, app/layout.tsx",
+      },
+      {
         title: "UI 개편 (참고: aeioustore.com, earthstore.kr)",
         status: "done",
         note: "두 사이트에서 '가운데 로고 헤더(왼쪽 메뉴·오른쪽 계정/장바구니)', '글자 탭 카테고리', '큰 사진 + 작은 글 상품 격자(모바일 2열·데스크톱 3열)', '좁은 한 줄 기둥의 소개 페이지'를 가져와 ooro의 3색 안에서 다시 짰어요. 제목 위에 작은 영문 라벨(SHOP·CART 등)을 붙여 화면마다 위계를 맞췄어요. 기능 코드는 건드리지 않고 배치와 스타일만 바꿨어요. 장바구니·주문서·마이페이지 안쪽 모양은 제목만 맞췄고, 더 다듬을 수 있어요.",

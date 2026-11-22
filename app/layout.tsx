@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -8,12 +7,6 @@ import AuthNotice from "@/components/layout/AuthNotice";
 import Providers from "@/components/providers/Providers";
 import ComingSoon from "@/components/ComingSoon";
 import { SITE_URL, allowIndexing, isComingSoon } from "@/lib/site";
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -37,7 +30,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${cormorant.variable} h-full antialiased`}>
+    <html lang="ko" className="h-full antialiased">
       <head>
         <link
           rel="stylesheet"
