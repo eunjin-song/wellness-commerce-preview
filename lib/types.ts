@@ -18,6 +18,10 @@ export interface Product {
   category: string
   /** 기본 가격. 옵션을 고르면 옵션의 추가 금액이 더해집니다. */
   price: number
+  /** 할인 전 가격(정가). 없으면 할인 표시를 하지 않아요. 항상 price 보다 큽니다. */
+  originalPrice: number | null
+  /** 화면에 보이는 순서 (작을수록 먼저). 관리자가 바꿔요. */
+  sortOrder: number
   /** 고객에게는 품절 여부만 알려줍니다 (재고 숫자는 관리자만 봐요). */
   inStock: boolean
   isActive: boolean

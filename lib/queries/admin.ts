@@ -16,10 +16,55 @@ export function useAdminProducts() {
     queryKey: ["admin", "products"],
     enabled: isAdmin,
     queryFn: async (): Promise<AdminProduct[]> => {
-      const { data, error } = await requireClient().from("products").select("*").order("created_at", { ascending: true })
+      const { data, error } = await requireClient()
+        .from("products")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
       if (error) throw error
       return (data as ProductRow[]).map(mapAdminProduct)
     },
+  })
+}
+
+/** 상품 노출 순서 바꾸기: 상품 id를 원하는 순서대로 넘기면 서버가 1, 2, 3 ... 번호를 매겨요. */
+export function useReorderProducts() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await requireClient().rpc("reorder_products", { p_ids: ids })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] })
+      queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+  })
+}
+
+/** 홈 화면 상단에 크게 보여줄 대표 상품 id 목록 (비어 있으면 순서상 앞의 두 상품을 보여줘요) */
+export function useHomeFeatured() {
+  const isAdmin = useIsAdmin()
+  return useQuery({
+    queryKey: ["admin", "home-featured"],
+    enabled: isAdmin,
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await requireClient().from("shop_settings").select("value").eq("key", "home_featured").maybeSingle()
+      if (error) throw error
+      const ids = (data?.value as { ids?: unknown } | null)?.ids
+      return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : []
+    },
+  })
+}
+
+export function useSaveHomeFeatured() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await requireClient().from("shop_settings").upsert({ key: "home_featured", value: { ids } })
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "home-featured"] }),
   })
 }
 
@@ -29,6 +74,8 @@ export interface SaveProductInput {
   subtitle: string
   category: string
   price: number
+  /** 할인 전 가격(정가). 없으면 null */
+  originalPrice: number | null
   stock: number
   isActive: boolean
   /** 새로 고른 사진은 data URL, 기존 사진은 주소 */
@@ -54,6 +101,7 @@ export function useSaveProduct() {
           subtitle: input.subtitle,
           category: input.category,
           price: input.price,
+          original_price: input.originalPrice,
           stock: input.stock,
           is_active: input.isActive,
           images,

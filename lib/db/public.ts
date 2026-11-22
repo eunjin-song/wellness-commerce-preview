@@ -11,6 +11,7 @@ export async function getPublicProducts(): Promise<{ products: Product[]; config
   const { data, error } = await supabase
     .from("products_public")
     .select("*")
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true })
 
   if (error) {
@@ -30,4 +31,21 @@ export async function getPublicProduct(id: string): Promise<{ product: Product |
     return { product: null, configured: true, failed: true }
   }
   return { product: data ? mapProduct(data as ProductRow) : null, configured: true, failed: false }
+}
+
+/**
+ * 홈 화면 상단의 대표 상품 id 목록 (관리자가 고른 것). 설정이 없거나 비어 있으면 빈 배열입니다.
+ * 고른 상품이 숨김·삭제됐을 때의 대체는 화면(홈)에서 처리해요.
+ */
+export async function getHomeFeaturedIds(): Promise<string[]> {
+  const supabase = createPublicClient()
+  if (!supabase) return []
+
+  const { data, error } = await supabase.from("shop_settings").select("value").eq("key", "home_featured").maybeSingle()
+  if (error) {
+    console.error("홈 대표 상품 설정을 불러오지 못했어요:", error.message)
+    return []
+  }
+  const ids = (data?.value as { ids?: unknown } | null)?.ids
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : []
 }

@@ -1,15 +1,22 @@
 import Image from "next/image"
 import Link from "next/link"
+import FeaturedTile from "@/components/products/FeaturedTile"
 import ProductCard from "@/components/products/ProductCard"
 import ServerNotice from "@/components/layout/ServerNotice"
-import { getPublicProducts } from "@/lib/db/public"
+import { getHomeFeaturedIds, getPublicProducts } from "@/lib/db/public"
+import type { Product } from "@/lib/types"
 
 // 상품 정보는 30초마다 새로 가져옵니다. (관리자가 바꾼 내용이 곧 반영돼요)
 export const revalidate = 30
 
 export default async function HomePage() {
   const { products, configured, failed } = await getPublicProducts()
-  const featured = products.filter((p) => p.inStock).slice(0, 6)
+  const featuredIds = await getHomeFeaturedIds()
+
+  // 대표 상품 2개: 관리자가 고른 상품(판매 중인 것만) → 부족하면 순서상 앞의 상품으로 채웁니다.
+  const picked = featuredIds.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => !!p)
+  const rest = products.filter((p) => !picked.includes(p))
+  const featured = [...picked, ...rest.filter((p) => p.inStock), ...rest.filter((p) => !p.inStock)].slice(0, 2)
 
   return (
     <main>
@@ -43,11 +50,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+      {/* 대표 상품 2개: 사진·"제품 보러가기"를 누르면 그 상품의 카테고리로 이동 */}
+      {configured && !failed && featured.length > 0 && (
+        <section aria-label="대표 상품" className="mx-auto max-w-6xl px-6 pt-16 md:pt-24">
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-6">
+            {featured.map((product, index) => (
+              <FeaturedTile key={product.id} product={product} priority={index === 0} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 전체 상품: 사진 / 이름·색상 / 가격·할인, 한 줄에 4개. 순서는 관리자 > 상품에서 바꿔요. */}
+      <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
         <div className="flex items-end justify-between gap-4 border-b border-brown/15 pb-5">
           <div>
-            <p className="eyebrow">New &amp; Recommended</p>
-            <h2 className="mt-3 font-display text-3xl md:text-4xl">이번 주 추천</h2>
+            <p className="eyebrow">All Products</p>
+            <h2 className="mt-3 font-display text-3xl md:text-4xl">전체 상품</h2>
           </div>
           <Link href="/products" className="shrink-0 text-sm underline underline-offset-[6px]">
             전체 보기
@@ -55,8 +74,8 @@ export default async function HomePage() {
         </div>
 
         {configured && !failed ? (
-          <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6">
-            {featured.map((product) => (
+          <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 md:gap-y-14 lg:grid-cols-4">
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

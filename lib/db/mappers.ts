@@ -27,6 +27,8 @@ export interface ProductRow {
   subtitle: string
   category: string
   price: number
+  original_price?: number | null
+  sort_order?: number
   images: string[]
   colors: ColorOption[]
   sizes: SizeOption[]
@@ -127,6 +129,8 @@ export function mapProduct(row: ProductRow): Product {
     subtitle: row.subtitle,
     category: row.category,
     price: row.price,
+    originalPrice: row.original_price ?? null,
+    sortOrder: row.sort_order ?? 0,
     inStock: row.in_stock ?? (row.stock ?? 0) > 0,
     isActive: row.is_active ?? true,
     images: row.images ?? [],

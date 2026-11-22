@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import ProductGrid from "@/components/products/ProductGrid"
 import ServerNotice from "@/components/layout/ServerNotice"
 import { getPublicProducts } from "@/lib/db/public"
@@ -17,7 +18,13 @@ export default async function ProductListPage() {
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed">몸과 마음의 리듬을 위한 웰니스 제품들을 만나보세요.</p>
       </header>
 
-      {configured && !failed ? <ProductGrid products={products} /> : <ServerNotice configured={configured} />}
+      {configured && !failed ? (
+        <Suspense fallback={null}>
+          <ProductGrid products={products} />
+        </Suspense>
+      ) : (
+        <ServerNotice configured={configured} />
+      )}
     </main>
   )
 }

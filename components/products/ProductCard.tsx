@@ -1,11 +1,35 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { Product } from "@/lib/types"
-import { hasPriceVariation } from "@/lib/pricing"
+import { discountPercent, hasPriceVariation } from "@/lib/pricing"
 import { won } from "@/lib/format"
 import HeartButton from "@/components/products/HeartButton"
 
-// 사진을 크게, 글은 작게 — 이름과 가격만 사진 아래에 조용히 놓습니다.
+/** 가격과 할인 정보: 정가(취소선) → 할인율 → 판매가 */
+export function PriceLine({ product, className = "" }: { product: Product; className?: string }) {
+  const percent = discountPercent(product)
+  return (
+    <p className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${className}`}>
+      {percent !== null && product.originalPrice !== null && (
+        <>
+          <span className="sr-only">정가</span>
+          <s className="text-xs opacity-60">{won(product.originalPrice)}</s>
+        </>
+      )}
+      {percent !== null && (
+        <span className="text-sm font-semibold" aria-label={`${percent}퍼센트 할인`}>
+          {percent}%
+        </span>
+      )}
+      <span className="text-sm font-medium tabular-nums">
+        {won(product.price)}
+        {hasPriceVariation(product) && "~"}
+      </span>
+    </p>
+  )
+}
+
+// 큰 사진 → 이름 → 색상 → 가격·할인. 사진을 누르면 상세 페이지로 가요.
 export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group relative">
@@ -17,7 +41,7 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={product.name}
               fill
               className="object-cover transition duration-700 ease-gentle group-hover:scale-[1.04]"
-              sizes="(min-width: 1024px) 30vw, 46vw"
+              sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 46vw"
             />
           )}
           {!product.inStock && (
@@ -27,27 +51,17 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        <p className="eyebrow mt-4 text-[11px]">{product.category}</p>
-        <p className="mt-1.5 text-sm font-medium leading-snug">{product.name}</p>
-        {product.subtitle && <p className="mt-1 hidden text-xs leading-snug md:block">{product.subtitle}</p>}
+        <p className="mt-4 text-sm font-medium leading-snug">{product.name}</p>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="text-sm">
-            {won(product.price)}
-            {hasPriceVariation(product) && "~"}
-          </p>
-          {product.colors.length > 0 && (
-            <span className="flex gap-1" aria-label={`색상 ${product.colors.map((c) => c.name).join(", ")}`}>
-              {product.colors.map((c) => (
-                <span
-                  key={c.name}
-                  className="h-3 w-3 rounded-full border border-brown/30"
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
-            </span>
-          )}
-        </div>
+        {product.colors.length > 0 && (
+          <span className="mt-2 flex gap-1.5" aria-label={`색상 ${product.colors.map((c) => c.name).join(", ")}`}>
+            {product.colors.map((c) => (
+              <span key={c.name} className="h-3 w-3 rounded-full border border-brown/30" style={{ backgroundColor: c.hex }} />
+            ))}
+          </span>
+        )}
+
+        <PriceLine product={product} className="mt-2" />
       </Link>
 
       <HeartButton productId={product.id} className="absolute right-2.5 top-2.5 bg-paper/90 hover:bg-paper" />

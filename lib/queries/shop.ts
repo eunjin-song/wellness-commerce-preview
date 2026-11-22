@@ -29,7 +29,11 @@ export function usePublicProducts() {
     queryFn: async () => {
       const supabase = createClient()
       if (!supabase) return []
-      const { data, error } = await supabase.from("products_public").select("*").order("created_at", { ascending: true })
+      const { data, error } = await supabase
+        .from("products_public")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true })
       if (error) throw error
       return (data as ProductRow[]).map(mapProduct)
     },

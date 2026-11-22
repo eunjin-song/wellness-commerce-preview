@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import type { AdminProduct } from "@/lib/types"
 import { useDeleteProduct, useSaveProduct } from "@/lib/queries/admin"
 import { toKoreanError } from "@/lib/db/errors"
-import { uid } from "@/lib/format"
+import { uid, won } from "@/lib/format"
 import ImagePicker from "@/components/ui/ImagePicker"
 
 interface ColorRow {
@@ -35,6 +35,7 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
   const [subtitle, setSubtitle] = useState(product?.subtitle ?? "")
   const [category, setCategory] = useState(product?.category ?? "")
   const [price, setPrice] = useState(product ? String(product.price) : "")
+  const [originalPrice, setOriginalPrice] = useState(product?.originalPrice ? String(product.originalPrice) : "")
   const [stock, setStock] = useState(product ? String(product.stock) : "0")
   const [isActive, setIsActive] = useState(product?.isActive ?? true)
   const [images, setImages] = useState<string[]>(product?.images ?? [])
@@ -58,6 +59,10 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
     if (!name.trim()) found.push("상품명을 입력해 주세요.")
     if (!category.trim()) found.push("카테고리를 입력해 주세요.")
     if (price.trim() === "" || priceValue === null) found.push("기본 가격은 0 이상의 숫자로 입력해 주세요.")
+    const originalValue = originalPrice.trim() === "" ? null : parseWon(originalPrice)
+    if (originalPrice.trim() !== "" && (originalValue === null || (priceValue !== null && originalValue <= priceValue))) {
+      found.push("정가(할인 전 가격)는 기본 가격보다 큰 숫자로 입력하거나, 할인이 없으면 비워 두세요.")
+    }
     if (stockValue === null) found.push("재고는 0 이상의 숫자로 입력해 주세요.")
     if (images.length === 0) found.push("상품 사진을 1장 이상 올려주세요.")
 
@@ -84,6 +89,7 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
         subtitle: subtitle.trim(),
         category: category.trim(),
         price: priceValue ?? 0,
+        originalPrice: originalValue,
         stock: stockValue ?? 0,
         isActive,
         images,
@@ -152,13 +158,36 @@ export default function ProductEditor({ product }: { product?: AdminProduct }) {
           </label>
           <input id="p-subtitle" className="field" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
         </div>
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="p-price" className="field-label">
-              기본 가격 (원)
+              기본 가격 (원) — 실제로 결제되는 가격
             </label>
             <input id="p-price" inputMode="numeric" className="field tabular-nums" value={price} onChange={(e) => setPrice(e.target.value)} />
           </div>
+          <div>
+            <label htmlFor="p-original" className="field-label">
+              정가 (원, 선택) — 할인 전 가격
+            </label>
+            <input
+              id="p-original"
+              inputMode="numeric"
+              className="field tabular-nums"
+              value={originalPrice}
+              onChange={(e) => setOriginalPrice(e.target.value)}
+              placeholder="할인이 없으면 비워 두세요"
+            />
+            <p className="mt-1 text-xs">
+              {(() => {
+                const o = parseWon(originalPrice)
+                const p = parseWon(price)
+                if (originalPrice.trim() === "" || o === null || p === null || o <= p) return "입력하면 정가에 취소선과 할인율이 함께 보여요."
+                return `고객 화면에는 정가 ${won(o)} → ${Math.round((1 - p / o) * 100)}% 할인으로 보여요.`
+              })()}
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="p-stock" className="field-label">
               재고 (고객에게 보이지 않아요)

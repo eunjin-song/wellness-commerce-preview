@@ -1,5 +1,6 @@
 "use client"
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useMemo, useState } from "react"
 import type { Product } from "@/lib/types"
 import ProductCard from "@/components/products/ProductCard"
@@ -15,7 +16,16 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 export default function ProductGrid({ products }: { products: Product[] }) {
   const categories = Array.from(new Set(products.map((p) => p.category))).filter(Boolean)
-  const [category, setCategory] = useState<string | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // 선택한 카테고리는 주소(?category=...)에 담아 둬서, 홈의 대표 상품에서 바로 이 화면으로 올 수 있고 링크로 공유도 돼요.
+  const fromUrl = searchParams.get("category")
+  const category = fromUrl && categories.includes(fromUrl) ? fromUrl : null
+  const setCategory = (next: string | null) => {
+    router.replace(next ? `${pathname}?category=${encodeURIComponent(next)}` : pathname, { scroll: false })
+  }
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortKey>("default")
 
@@ -78,7 +88,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
       {visible.length === 0 ? (
         <p className="mt-16 text-center text-sm">{query.trim() ? "검색 결과가 없어요. 다른 단어로 찾아보세요." : "등록된 상품이 없어요."}</p>
       ) : (
-        <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 md:gap-y-14">
+        <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 md:gap-y-14 lg:grid-cols-4">
           {visible.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

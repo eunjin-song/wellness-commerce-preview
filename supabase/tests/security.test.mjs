@@ -67,6 +67,7 @@ try {
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0002_public_question_photos_for_visitors.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0003_stock_and_order_cancel.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0004_edit_delete_own_posts.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0005_product_order_and_discount.sql`, "utf8"))
   console.log("마이그레이션 적용 완료")
   await c.query(fs.readFileSync(`${repo}/supabase/seed.sql`, "utf8"))
   console.log("시드 적용 완료\n")
@@ -155,6 +156,48 @@ try {
     return anon(`select count(*)::int n from public.products_public where id = 'p-test'`)
   }, (r) => r.rows[0].n === 0 || r.rows[0].n)
   await expect("관리자는 원본(재고 포함)을 볼 수 있다", () => as(U.admin, `select stock from public.products where id = 'calm-sleep-serum'`), (r) => r.rows[0].stock === 18 || JSON.stringify(r.rows))
+
+  console.log("\n[상품 순서 · 할인 정보 · 홈 대표 상품]")
+  const orderIds = async () => (await anon(`select id from public.products_public order by sort_order, created_at`)).rows.map((r) => r.id)
+  await expect("공개 뷰에 순서(sort_order)와 정가(original_price)가 있다", () => anon(`select sort_order, original_price from public.products_public limit 1`),
+    (r) => ("sort_order" in r.rows[0] && "original_price" in r.rows[0]) || JSON.stringify(r.rows))
+  await expect("시드 상품은 등록 순서대로 순서 번호가 매겨진다 (중복 없음)", () => as(U.admin, `select count(*)::int n, count(distinct sort_order)::int d, min(sort_order)::int lo from public.products`),
+    (r) => (r.rows[0].n === r.rows[0].d && r.rows[0].lo >= 1) || JSON.stringify(r.rows))
+  await expect("새 상품은 자동으로 맨 뒤에 붙는다", async () => {
+    await as(U.admin, `insert into public.products (id, name, price, stock, images) values ('p-last', '맨 뒤 상품', 1000, 1, array['x'])`)
+    const r = await as(U.admin, `select (select max(sort_order) from public.products where id <> 'p-last')::int prev, (select sort_order from public.products where id = 'p-last')::int mine`)
+    await as(U.admin, `delete from public.products where id = 'p-last'`)
+    return r
+  }, (r) => r.rows[0].mine === r.rows[0].prev + 1 || JSON.stringify(r.rows))
+  await expectFail("정가는 판매가보다 커야 한다", () => as(U.admin, `update public.products set original_price = 100 where id = 'calm-sleep-serum'`), /products_original_price_check|check constraint/)
+  await expect("정가를 넣으면 공개 화면에서 보이고, 비우면 사라진다", async () => {
+    await as(U.admin, `update public.products set original_price = 60000 where id = 'calm-sleep-serum'`)
+    const a = await anon(`select original_price from public.products_public where id = 'calm-sleep-serum'`)
+    await as(U.admin, `update public.products set original_price = null where id = 'calm-sleep-serum'`)
+    const b = await anon(`select original_price from public.products_public where id = 'calm-sleep-serum'`)
+    return { a: a.rows[0].original_price, b: b.rows[0].original_price }
+  }, (r) => (r.a === 60000 && r.b === null) || JSON.stringify(r))
+  await expect("관리자는 순서를 바꿀 수 있다 (마지막 상품을 맨 앞으로)", async () => {
+    const before = await orderIds()
+    const moved = [before[before.length - 1], ...before.slice(0, -1)]
+    await as(U.admin, `select public.reorder_products($1::text[])`, [moved])
+    return { moved, after: await orderIds() }
+  }, (r) => JSON.stringify(r.moved) === JSON.stringify(r.after) || JSON.stringify(r))
+  await expectFail("일반 회원은 순서를 바꿀 수 없다", () => as(U.alice, `select public.reorder_products(array['calm-sleep-serum'])`), /not_admin/)
+  await expectFail("비회원은 순서를 바꿀 수 없다", () => anon(`select public.reorder_products(array['calm-sleep-serum'])`), /permission denied/)
+  await expectFail("일반 회원은 sort_order 를 직접 고칠 수 없다", async () => {
+    const r = await as(U.alice, `update public.products set sort_order = 1`)
+    if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
+  }, /row-level security|permission denied/)
+  await expect("홈 대표 상품 설정은 누구나 읽는다", () => anon(`select value from public.shop_settings where key = 'home_featured'`), (r) => Array.isArray(r.rows[0]?.value?.ids) || JSON.stringify(r.rows))
+  await expect("관리자는 홈 대표 상품을 바꿀 수 있다", async () => {
+    await as(U.admin, `update public.shop_settings set value = '{"ids":["calm-sleep-serum","linen-sleep-robe"]}' where key = 'home_featured'`)
+    return anon(`select value from public.shop_settings where key = 'home_featured'`)
+  }, (r) => r.rows[0].value.ids.length === 2 || JSON.stringify(r.rows))
+  await expectFail("일반 회원은 홈 대표 상품을 못 바꾼다", async () => {
+    const r = await as(U.alice, `update public.shop_settings set value = '{"ids":[]}' where key = 'home_featured'`)
+    if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
+  }, /row-level security/)
 
   console.log("\n[설정]")
   await expect("누구나 배송 설정을 읽는다", () => anon(`select value from public.shop_settings where key = 'shipping'`), (r) => r.rows[0].value.fee === 3000 || JSON.stringify(r.rows))
