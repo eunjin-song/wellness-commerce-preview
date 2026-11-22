@@ -99,6 +99,7 @@ interface ReviewRow {
   is_hidden: boolean
   created_at: string
   order_id: string | null
+  user_id?: string | null
 }
 
 interface QuestionRow {
@@ -209,6 +210,7 @@ export function mapReview(row: ReviewRow): Review {
     isHidden: row.is_hidden,
     createdAt: kstDate(row.created_at),
     orderId: row.order_id,
+    userId: row.user_id ?? null,
   }
 }
 

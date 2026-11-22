@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Logo from "@/components/Logo"
+import { BUSINESS, shown } from "@/lib/business"
 
 const SHOP_LINKS = [
   { href: "/about", label: "브랜드 이야기" },
@@ -52,7 +53,35 @@ export default function Footer() {
           </nav>
         </div>
 
-        <p className="mt-14 border-t border-cream/25 pt-6 text-xs">© 2026 ooro. All rights reserved.</p>
+        <div className="mt-14 space-y-4 border-t border-cream/25 pt-6 text-xs leading-relaxed">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 font-medium">
+            <li>
+              <Link href="/terms" className="underline-offset-4 hover:underline">
+                이용약관
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="underline-offset-4 hover:underline">
+                개인정보처리방침
+              </Link>
+            </li>
+          </ul>
+
+          {/* 전자상거래법상 표시 항목: 값은 lib/business.ts 에서 채웁니다 */}
+          <address className="not-italic opacity-80">
+            <p>
+              상호 {shown(BUSINESS.company)} · 대표 {shown(BUSINESS.ceo)} · 사업자등록번호 {shown(BUSINESS.businessNumber)}
+            </p>
+            <p>
+              통신판매업 신고번호 {shown(BUSINESS.ecommerceNumber)} · 주소 {shown(BUSINESS.address)}
+            </p>
+            <p>
+              고객센터 {shown(BUSINESS.phone)} · {shown(BUSINESS.email)} · {BUSINESS.hours}
+            </p>
+          </address>
+
+          <p>© 2026 ooro. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   )

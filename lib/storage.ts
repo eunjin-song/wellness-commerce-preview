@@ -8,6 +8,23 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 }
 
 /**
+ * 저장소의 사진을 지웁니다. (글을 지울 때 함께 정리. 실패해도 글 삭제는 막지 않아요.)
+ * - 공개 저장소는 사진 주소(http...), 비공개(Q&A)는 저장소 안의 경로를 받아요.
+ */
+export async function removeImages(bucket: typeof PUBLIC_BUCKET | typeof QUESTION_BUCKET, images: string[]): Promise<void> {
+  const marker = `/${bucket}/`
+  const paths = images
+    .map((image) => (image.startsWith("http") ? (image.includes(marker) ? image.slice(image.indexOf(marker) + marker.length) : "") : image))
+    .filter(Boolean)
+  if (paths.length === 0) return
+  try {
+    await requireClient().storage.from(bucket).remove(paths)
+  } catch {
+    // 사진 정리는 베스트 에포트: 못 지워도 괜찮아요.
+  }
+}
+
+/**
  * 화면에서 고른 사진(data URL)을 저장소에 올리고, 저장할 값을 돌려줍니다.
  * - 이미 올라간 주소(http...)는 그대로 둡니다. (상품 수정 때 기존 사진 유지)
  * - 공개 저장소는 "누구나 볼 수 있는 주소", 비공개(Q&A)는 "저장소 안의 경로"를 돌려줘요.

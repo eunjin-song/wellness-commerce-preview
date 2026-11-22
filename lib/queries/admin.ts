@@ -4,9 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { requireClient } from "@/lib/supabase/client"
 import { PUBLIC_BUCKET } from "@/lib/supabase/config"
 import { useIsAdmin } from "@/lib/hooks"
-import { mapAdminProduct, mapOrder, mapReview, type ProductRow } from "@/lib/db/mappers"
+import { mapAccount, mapAdminProduct, mapOrder, mapReview, type ProductRow } from "@/lib/db/mappers"
 import { uploadImages } from "@/lib/storage"
-import type { AdminProduct, Order, OrderStatus, Review } from "@/lib/types"
+import type { Account, AdminProduct, Order, OrderStatus, Review } from "@/lib/types"
 
 /* 관리자 화면의 모든 조회·수정은 DB의 RLS가 "관리자인지" 다시 확인합니다. (화면에서 숨기는 것만으로 막지 않아요) */
 
@@ -120,7 +120,26 @@ export function useSetOrderStatus() {
       const { error } = await requireClient().from("orders").update({ status }).eq("id", id)
       if (error) throw error
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "orders"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] })
+      // 취소하면 재고가 되돌아가므로 상품 목록도 새로 읽어요.
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] })
+      queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+  })
+}
+
+/** 전체 회원 목록 (관리자만. RLS가 관리자에게만 모든 프로필을 보여줘요) */
+export function useAdminMembers() {
+  const isAdmin = useIsAdmin()
+  return useQuery({
+    queryKey: ["admin", "members"],
+    enabled: isAdmin,
+    queryFn: async (): Promise<Account[]> => {
+      const { data, error } = await requireClient().from("profiles").select("*").order("created_at", { ascending: false })
+      if (error) throw error
+      return (data as Parameters<typeof mapAccount>[0][]).map(mapAccount)
+    },
   })
 }
 

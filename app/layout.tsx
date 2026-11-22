@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import AuthNotice from "@/components/layout/AuthNotice";
 import Providers from "@/components/providers/Providers";
 import ComingSoon from "@/components/ComingSoon";
-import { isComingSoon } from "@/lib/site";
+import { SITE_URL, allowIndexing, isComingSoon } from "@/lib/site";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -16,13 +16,19 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "ooro. — 프리미엄 웰니스",
-  description: "하루의 리듬을 되찾는 웰니스 브랜드 ooro. 미리보기",
+  description: "하루의 리듬을 되찾는 웰니스 브랜드 ooro. 정직한 성분과 절제된 만듦새의 웰니스 리추얼을 제안합니다.",
+  // 오픈 전(미리보기·커밍순)에는 검색 엔진에 노출하지 않습니다.
+  robots: allowIndexing ? { index: true, follow: true } : { index: false, follow: false },
   openGraph: {
-    title: "ooro.",
+    title: "ooro. — 프리미엄 웰니스",
     description: "하루의 리듬을 되찾는 웰니스 브랜드",
+    siteName: "ooro.",
+    locale: "ko_KR",
     type: "website",
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

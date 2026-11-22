@@ -6,7 +6,7 @@ import { createClient, requireClient } from "@/lib/supabase/client"
 import { PUBLIC_BUCKET, QUESTION_BUCKET } from "@/lib/supabase/config"
 import { useAuthState } from "@/lib/auth"
 import { mapQuestion, mapReview } from "@/lib/db/mappers"
-import { uploadImages } from "@/lib/storage"
+import { removeImages, uploadImages } from "@/lib/storage"
 import { optionLabel } from "@/lib/store/cart"
 import { REVIEWABLE_STATUSES } from "@/lib/shop"
 import { useMyOrders } from "@/lib/queries/account"
@@ -98,6 +98,38 @@ export function useAddReview() {
   })
 }
 
+/** 내 후기의 별점·내용 고치기 */
+export function useUpdateReview() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { id: string; productId: string; rating: number; content: string }) => {
+      const { data, error } = await requireClient().from("reviews").update({ rating: input.rating, content: input.content }).eq("id", input.id).select("id")
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("permission denied")
+    },
+    onSuccess: (_data, vars) => queryClient.invalidateQueries({ queryKey: ["reviews", vars.productId] }),
+  })
+}
+
+/** 내 후기 지우기 (붙인 사진도 함께 정리) */
+export function useDeleteReview() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { id: string; productId: string; images: string[] }) => {
+      const { data, error } = await requireClient().from("reviews").delete().eq("id", input.id).select("id")
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("permission denied")
+      await removeImages(PUBLIC_BUCKET, input.images)
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["reviews", vars.productId] })
+      queryClient.invalidateQueries({ queryKey: ["my-reviews"] })
+    },
+  })
+}
+
 /* ---------------- Q&A ---------------- */
 
 /** productId 를 주면 그 상품의 Q&A만, 생략하면 전체. 비밀글은 서버가 가려서 내려줍니다. */
@@ -134,6 +166,39 @@ export function useCreateQuestion() {
         images: paths,
       })
       if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["questions"] }),
+  })
+}
+
+/** 내 질문 고치기 (관리자 답변이 달리기 전까지만 가능해요) */
+export function useUpdateQuestion() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { id: string; title: string; content: string; isSecret: boolean }) => {
+      const { data, error } = await requireClient()
+        .from("questions")
+        .update({ title: input.title, content: input.content, is_secret: input.isSecret })
+        .eq("id", input.id)
+        .select("id")
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("question_locked")
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["questions"] }),
+  })
+}
+
+/** 내 질문 지우기 (첨부 사진도 함께 정리) */
+export function useDeleteQuestion() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { id: string; images: string[] }) => {
+      const { data, error } = await requireClient().from("questions").delete().eq("id", input.id).select("id")
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error("permission denied")
+      await removeImages(QUESTION_BUCKET, input.images)
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["questions"] }),
   })

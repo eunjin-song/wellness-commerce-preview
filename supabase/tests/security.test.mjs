@@ -65,6 +65,8 @@ try {
   // ---------- 마이그레이션 + 시드 ----------
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0001_init.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0002_public_question_photos_for_visitors.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0003_stock_and_order_cancel.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0004_edit_delete_own_posts.sql`, "utf8"))
   console.log("마이그레이션 적용 완료")
   await c.query(fs.readFileSync(`${repo}/supabase/seed.sql`, "utf8"))
   console.log("시드 적용 완료\n")
@@ -235,6 +237,68 @@ try {
   }, /row-level security/)
   await expectFail("일반 회원은 금액을 바꿀 수 없다", () => as(U.alice, `update public.orders set amount = 1 where id = '${order.id}'`), /permission denied/)
 
+  console.log("\n[재고 차감 · 주문 취소]")
+  const stockOf = async (id) => (await as(U.admin, `select stock from public.products where id = $1`, [id])).rows[0].stock
+  const statusOf = async (id) => (await c.query(`select status from public.orders where id = $1`, [id])).rows[0].status
+  const base = await stockOf("calm-sleep-serum")
+  let o1
+  await expect("주문하면 그 수량만큼 재고가 줄어든다", async () => {
+    o1 = (await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 3 }])).rows[0]
+    return stockOf("calm-sleep-serum")
+  }, (n) => n === base - 3 || `재고 ${n} (기대 ${base - 3})`)
+  await expect("같은 상품이 여러 줄이면 합쳐서 줄어든다 (앰플 30ml 1 + 50ml 1)", async () => {
+    const before = await stockOf("daily-collagen-ampoule")
+    await call(U.alice, [{ product_id: "daily-collagen-ampoule", quantity: 1, size: "30ml" }, { product_id: "daily-collagen-ampoule", quantity: 1, size: "50ml" }])
+    return before - (await stockOf("daily-collagen-ampoule"))
+  }, (d) => d === 2 || `줄어든 수량 ${d}`)
+  await expect("재고 부족으로 실패한 주문은 다른 상품 재고도 줄이지 않는다", async () => {
+    const before = await stockOf("calm-sleep-serum")
+    try { await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 1 }, { product_id: "balance-magnesium", quantity: 1 }]) } catch {}
+    return before - (await stockOf("calm-sleep-serum"))
+  }, (d) => d === 0 || `줄어든 수량 ${d}`)
+  await expect("재고를 정확히 다 쓰는 주문은 성공하고 품절이 된다", async () => {
+    const keep = await stockOf("calm-sleep-serum")
+    await as(U.admin, `update public.products set stock = 2 where id = 'calm-sleep-serum'`)
+    await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 2 }])
+    const r = await anon(`select in_stock from public.products_public where id = 'calm-sleep-serum'`)
+    await as(U.admin, `update public.products set stock = ${keep} where id = 'calm-sleep-serum'`)
+    return r
+  }, (r) => r.rows[0].in_stock === false || JSON.stringify(r.rows))
+  await expectFail("재고가 없으면 주문할 수 없다", async () => {
+    await as(U.admin, `update public.products set stock = 0 where id = 'calm-sleep-serum'`)
+    try { await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 1 }]) } finally {
+      await as(U.admin, `update public.products set stock = ${base - 3} where id = 'calm-sleep-serum'`)
+    }
+  }, /out_of_stock/)
+
+  await expectFail("다른 사람은 남의 주문을 취소할 수 없다", () => as(U.bob, `select public.cancel_my_order($1)`, [o1.id]), /order_not_found/)
+  await expectFail("비로그인은 주문을 취소할 수 없다", () => anon(`select public.cancel_my_order($1)`, [o1.id]), /permission denied/)
+  await expect("고객이 주문을 취소하면 상태가 '취소'가 되고 재고가 되돌아온다", async () => {
+    const before = await stockOf("calm-sleep-serum")
+    await as(U.alice, `select public.cancel_my_order($1)`, [o1.id])
+    return { status: await statusOf(o1.id), added: (await stockOf("calm-sleep-serum")) - before }
+  }, (r) => (r.status === "취소" && r.added === 3) || JSON.stringify(r))
+  await expectFail("이미 취소된 주문은 다시 취소할 수 없다 (재고가 두 번 늘지 않음)", () => as(U.alice, `select public.cancel_my_order($1)`, [o1.id]), /cannot_cancel/)
+  await expectFail("취소된 주문은 관리자도 되살릴 수 없다", () => as(U.admin, `update public.orders set status = '배송 준비중' where id = $1`, [o1.id]), /order_cancelled/)
+  await expect("관리자가 취소로 바꿔도 재고가 되돌아온다", async () => {
+    const o = (await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 2 }])).rows[0]
+    const before = await stockOf("calm-sleep-serum")
+    await as(U.admin, `update public.orders set status = '취소' where id = $1`, [o.id])
+    return (await stockOf("calm-sleep-serum")) - before
+  }, (d) => d === 2 || `늘어난 수량 ${d}`)
+  await expect("배송 준비중부터는 고객이 직접 취소할 수 없다", async () => {
+    const o = (await call(U.alice, [{ product_id: "calm-sleep-serum", quantity: 1 }])).rows[0]
+    await as(U.admin, `update public.orders set status = '배송 준비중' where id = $1`, [o.id])
+    try { await as(U.alice, `select public.cancel_my_order($1)`, [o.id]); return "취소됨" } catch (e) { return e.message }
+  }, (m) => /cannot_cancel/.test(m) || m)
+  await expect("재고를 줄이기 전에 접수된 옛 주문을 취소해도 재고는 늘지 않는다", async () => {
+    await c.query(`insert into public.orders (id, user_id, subtotal, shipping_fee, amount, recipient, phone, zip, address1) values ('OR-OLD-0001', '${U.alice}', 1, 0, 1, 'a', '010-1111-2222', '06236', 'd')`)
+    await c.query(`insert into public.order_items (order_id, product_id, name, price, quantity) values ('OR-OLD-0001', 'calm-sleep-serum', 'x', 1, 5)`)
+    const before = await stockOf("calm-sleep-serum")
+    await as(U.alice, `select public.cancel_my_order('OR-OLD-0001')`)
+    return (await stockOf("calm-sleep-serum")) - before
+  }, (d) => d === 0 || `늘어난 수량 ${d}`)
+
   console.log("\n[후기]")
   const review = (uid, orderId, productId) =>
     as(uid, `insert into public.reviews (product_id, order_id, rating, content, option_label, images) values ($1, $2, 5, '정말 좋아요', '차콜 / M', array['https://x/y.jpg']) returning *`, [productId, orderId])
@@ -250,10 +314,17 @@ try {
   await expectFail("같은 주문·상품에 두 번째 후기는 거부", () => review(U.alice, order.id, "linen-sleep-robe"), /duplicate key|unique/)
   await expectFail("후기에 user_id 를 직접 넣을 수 없다 (컬럼 권한)", () => as(U.alice, `insert into public.reviews (user_id, product_id, order_id, rating, content) values ('${U.bob}', 'linen-sleep-robe', '${order.id}', 5, 'x')`), /permission denied/)
   await expect("누구나 후기를 읽는다", () => anon(`select author_name, images from public.reviews where product_id = 'linen-sleep-robe'`), (r) => r.rows.length === 1 || r.rows.length)
-  await expectFail("일반 회원은 후기를 숨길 수 없다", async () => {
-    const r = await as(U.alice, `update public.reviews set is_hidden = true`)
-    if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
-  }, /row-level security|permission denied/)
+  await expect("일반 회원은 후기를 숨길 수 없다 (본인 후기여도 무시된다)", async () => {
+    await as(U.alice, `update public.reviews set is_hidden = true`)
+    return anon(`select count(*)::int n from public.reviews`)
+  }, (r) => r.rows[0].n === 1 || JSON.stringify(r.rows))
+  await expect("본인은 후기의 별점·내용을 고칠 수 있다", async () => {
+    await as(U.alice, `update public.reviews set rating = 4, content = '수정한 후기'`)
+    return anon(`select rating, content from public.reviews`)
+  }, (r) => (r.rows[0].rating === 4 && r.rows[0].content === '수정한 후기') || JSON.stringify(r.rows))
+  await expect("남의 후기는 고칠 수 없다 (0행)", () => as(U.bob, `update public.reviews set content = '해킹'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("남의 후기는 지울 수 없다 (0행)", () => as(U.bob, `delete from public.reviews`), (r) => r.rowCount === 0 || r.rowCount)
+  await expectFail("후기의 작성자·상품은 바꿀 수 없다 (컬럼 권한)", () => as(U.alice, `update public.reviews set product_id = 'calm-sleep-serum'`), /permission denied/)
   await expect("관리자가 후기를 숨기면 비회원에게 안 보인다", async () => {
     await as(U.admin, `update public.reviews set is_hidden = true`)
     return anon(`select * from public.reviews`)
@@ -274,10 +345,16 @@ try {
   await expect("공개 질문은 누구나 본다", () => anon(`select title from public.questions_feed where not is_secret`), (r) => r.rows[0].title === "일반 질문" || JSON.stringify(r.rows))
   await expectFail("원본 questions 는 비회원이 못 읽는다", () => anon(`select * from public.questions`), /permission denied/)
   await expect("다른 회원은 원본 questions 에서 남의 질문이 0행", () => as(U.bob, `select * from public.questions`), (r) => r.rows.length === 0 || r.rows.length)
-  await expectFail("일반 회원은 답변을 달 수 없다", async () => {
-    const r = await as(U.alice, `update public.questions set answer = '내가 답변' where title = '일반 질문'`)
-    if (r.rowCount === 0) throw new Error("row-level security: 0행 수정")
-  }, /row-level security|permission denied/)
+  await expect("일반 회원은 답변을 달 수 없다 (본인 질문이어도 무시된다)", async () => {
+    await as(U.alice, `update public.questions set answer = '내가 답변', answered_at = now() where title = '일반 질문'`)
+    return c.query(`select answer from public.questions where title = '일반 질문'`)
+  }, (r) => r.rows[0].answer === null || JSON.stringify(r.rows))
+  await expect("남의 질문은 수정되지 않는다 (0행)", () => as(U.bob, `update public.questions set title = '해킹' where title = '일반 질문'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("본인은 답변 전 질문의 제목·내용·비밀 여부를 고칠 수 있다", async () => {
+    await as(U.alice, `update public.questions set title = '수정한 질문', content = '수정한 내용', is_secret = false where title = '일반 질문'`)
+    return c.query(`select title, content from public.questions where title = '수정한 질문'`)
+  }, (r) => (r.rows.length === 1 && r.rows[0].content === "수정한 내용") || JSON.stringify(r.rows))
+  await as(U.alice, `update public.questions set title = '일반 질문' where title = '수정한 질문'`)
   await expect("관리자가 답변하면 답변완료로 보인다", async () => {
     await as(U.admin, `update public.questions set answer = '안녕하세요', answered_at = now() where title = '일반 질문'`)
     return anon(`select is_answered, answer from public.questions_feed where title = '일반 질문'`)
@@ -287,6 +364,15 @@ try {
     return as(U.bob, `select is_answered, answer from public.questions_feed where is_secret`)
   }, (r) => (r.rows[0].is_answered === true && r.rows[0].answer === null) || JSON.stringify(r.rows))
   await expectFail("질문에 answer 컬럼을 직접 넣을 수 없다", () => as(U.alice, `insert into public.questions (title, content, answer) values ('a','b','c')`), /permission denied/)
+  await expect("답변이 달린 질문은 본인도 고칠 수 없다 (0행)", () => as(U.alice, `update public.questions set content = '답변 뒤 수정' where title = '일반 질문'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("남의 질문은 지울 수 없다 (0행)", () => as(U.bob, `delete from public.questions where title = '일반 질문'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("본인은 질문을 지울 수 있다 (답변이 달렸어도)", async () => {
+    await as(U.alice, `delete from public.questions where title = '일반 질문'`)
+    return c.query(`select count(*)::int n from public.questions where title = '일반 질문'`)
+  }, (r) => r.rows[0].n === 0 || JSON.stringify(r.rows))
+  await expectFail("비회원은 질문을 지울 수 없다", () => anon(`delete from public.questions`), /permission denied/)
+  await as(U.alice, `insert into public.questions (product_id, title, content, is_secret, images) values ('calm-sleep-serum', '일반 질문', '내용', false, '{}')`)
+  await as(U.admin, `update public.questions set answer = '안녕하세요', answered_at = now() where title = '일반 질문'`)
 
   console.log("\n[사진 저장소]")
   await expect("회원은 자기 폴더에 후기 사진을 올릴 수 있다", () => as(U.alice, `insert into storage.objects (bucket_id, name) values ('public-images', 'reviews/${U.alice}/a.jpg')`), (r) => r.rowCount === 1 || r.rowCount)

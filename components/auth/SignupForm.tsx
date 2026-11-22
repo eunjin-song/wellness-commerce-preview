@@ -171,11 +171,21 @@ export default function SignupForm() {
         <hr className="border-brown/20" />
         <label className="flex items-center gap-2">
           <input type="checkbox" className="h-4 w-4 accent-brown" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} />
-          (필수) 이용약관 동의
+          <span>
+            (필수) 이용약관 동의{" "}
+            <Link href="/terms" target="_blank" className="text-xs underline underline-offset-4">
+              보기
+            </Link>
+          </span>
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" className="h-4 w-4 accent-brown" checked={agreePrivacy} onChange={(e) => setAgreePrivacy(e.target.checked)} />
-          (필수) 개인정보 수집·이용 동의
+          <span>
+            (필수) 개인정보 수집·이용 동의{" "}
+            <Link href="/privacy" target="_blank" className="text-xs underline underline-offset-4">
+              보기
+            </Link>
+          </span>
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" className="h-4 w-4 accent-brown" checked={agreeMarketing} onChange={(e) => setAgreeMarketing(e.target.checked)} />

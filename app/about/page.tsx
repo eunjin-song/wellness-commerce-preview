@@ -1,5 +1,11 @@
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "브랜드 이야기 — ooro.",
+  description: "멈춤이 있어야 다시 걸을 수 있습니다. ooro.가 제품을 만드는 방식과 가치를 소개합니다.",
+}
 
 const VALUES = [
   {

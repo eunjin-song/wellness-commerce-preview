@@ -45,6 +45,8 @@ export interface Review {
   isHidden: boolean
   createdAt: string
   orderId: string | null
+  /** 작성자(탈퇴한 회원이면 null). 내 후기인지 알아볼 때 써요. */
+  userId: string | null
 }
 
 export interface Answer {

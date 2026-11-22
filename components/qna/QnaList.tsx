@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import type { Question } from "@/lib/types"
-import { useSignedUrls } from "@/lib/queries/community"
+import { useDeleteQuestion, useSignedUrls, useUpdateQuestion } from "@/lib/queries/community"
+import { toKoreanError } from "@/lib/db/errors"
 import PhotoStrip from "@/components/ui/PhotoStrip"
 
 interface Props {
@@ -17,6 +18,110 @@ function QuestionPhotos({ paths }: { paths: string[] }) {
   const { data } = useSignedUrls(paths)
   if (!data || data.length === 0) return null
   return <PhotoStrip images={data} label="첨부 사진" />
+}
+
+/** 내 질문의 수정·삭제. 답변이 달린 뒤에는 수정할 수 없고 삭제만 가능해요. */
+function MyQuestionActions({ question: q, onDeleted }: { question: Question; onDeleted: () => void }) {
+  const update = useUpdateQuestion()
+  const remove = useDeleteQuestion()
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(q.title)
+  const [content, setContent] = useState(q.content)
+  const [isSecret, setIsSecret] = useState(q.isSecret)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim() || !content.trim()) {
+      setError("제목과 내용을 모두 입력해 주세요.")
+      return
+    }
+    setError(null)
+    try {
+      await update.mutateAsync({ id: q.id, title: title.trim(), content: content.trim(), isSecret })
+      setEditing(false)
+    } catch (err) {
+      setError(toKoreanError(err, "질문을 고치지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("이 질문을 삭제할까요?\n삭제하면 되돌릴 수 없어요.")) return
+    setError(null)
+    try {
+      await remove.mutateAsync({ id: q.id, images: q.images })
+      onDeleted()
+    } catch (err) {
+      setError(toKoreanError(err, "질문을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
+  }
+
+  if (editing) {
+    return (
+      <form onSubmit={handleSave} className="space-y-3 rounded-2xl bg-paper p-5" noValidate>
+        <div>
+          <label htmlFor={`q-title-${q.id}`} className="field-label">
+            제목
+          </label>
+          <input id={`q-title-${q.id}`} className="field" value={title} maxLength={80} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor={`q-content-${q.id}`} className="field-label">
+            내용
+          </label>
+          <textarea id={`q-content-${q.id}`} className="field resize-none" rows={4} value={content} onChange={(e) => setContent(e.target.value)} />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isSecret} onChange={(e) => setIsSecret(e.target.checked)} className="h-4 w-4 accent-brown" />
+          비밀글
+        </label>
+        <p className="text-xs">첨부 사진은 고칠 수 없어요. 사진을 바꾸려면 삭제 후 다시 등록해 주세요.</p>
+        {error && (
+          <p role="alert" className="field-error">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button type="submit" className="btn-primary px-5 py-2 text-xs" disabled={update.isPending}>
+            {update.isPending ? "저장 중…" : "저장"}
+          </button>
+          <button
+            type="button"
+            className="btn-outline px-5 py-2 text-xs"
+            onClick={() => {
+              setEditing(false)
+              setTitle(q.title)
+              setContent(q.content)
+              setIsSecret(q.isSecret)
+              setError(null)
+            }}
+          >
+            취소
+          </button>
+        </div>
+      </form>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex gap-3 text-xs">
+        {!q.isAnswered && (
+          <button type="button" className="underline underline-offset-4" onClick={() => setEditing(true)}>
+            수정
+          </button>
+        )}
+        <button type="button" className="underline underline-offset-4" disabled={remove.isPending} onClick={handleDelete}>
+          삭제
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="field-error">
+          {error}
+        </p>
+      )}
+    </div>
+  )
 }
 
 export default function QnaList({ questions, loading, productNames }: Props) {
@@ -70,6 +175,7 @@ export default function QnaList({ questions, loading, productNames }: Props) {
                   <>
                     <p className="whitespace-pre-line leading-relaxed">{q.content}</p>
                     {q.images.length > 0 && <QuestionPhotos paths={q.images} />}
+                    {q.isMine && <MyQuestionActions question={q} onDeleted={() => setOpenId(null)} />}
                     {q.answer ? (
                       <div className="rounded-2xl bg-paper p-5">
                         <p className="text-xs font-medium">ooro. 답변 · {q.answer.createdAt}</p>

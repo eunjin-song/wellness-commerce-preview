@@ -2,13 +2,27 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useMyOrders } from "@/lib/queries/account"
+import { useState } from "react"
+import { useCancelOrder, useMyOrders } from "@/lib/queries/account"
+import { toKoreanError } from "@/lib/db/errors"
 import { optionLabel } from "@/lib/store/cart"
 import { won } from "@/lib/format"
 
 export default function OrderHistory() {
   const query = useMyOrders()
+  const cancel = useCancelOrder()
+  const [error, setError] = useState<string | null>(null)
   const orders = query.data ?? []
+
+  async function handleCancel(orderId: string) {
+    if (!window.confirm("이 주문을 취소할까요?\n취소하면 되돌릴 수 없어요.")) return
+    setError(null)
+    try {
+      await cancel.mutateAsync(orderId)
+    } catch (err) {
+      setError(toKoreanError(err, "주문을 취소하지 못했어요. 잠시 후 다시 시도해 주세요."))
+    }
+  }
 
   if (query.isPending) return <p className="py-16 text-center text-sm">불러오는 중이에요…</p>
   if (query.isError) return <p className="py-16 text-center text-sm">주문 내역을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
@@ -25,7 +39,13 @@ export default function OrderHistory() {
   }
 
   return (
-    <ul className="space-y-6">
+    <>
+      {error && (
+        <p role="alert" className="field-error mb-4">
+          {error}
+        </p>
+      )}
+      <ul className="space-y-6">
       {orders.map((order) => (
         <li key={order.id} className="rounded-2xl border border-brown/25 p-5 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -77,8 +97,18 @@ export default function OrderHistory() {
             </span>
             <span className="font-display text-xl tabular-nums">{won(order.amount)}</span>
           </p>
+
+          {order.status === "주문 접수" && (
+            <div className="mt-4 flex justify-end">
+              <button type="button" className="btn-outline px-5 py-2 text-xs" disabled={cancel.isPending} onClick={() => handleCancel(order.id)}>
+                {cancel.isPending && cancel.variables === order.id ? "취소하는 중…" : "주문 취소"}
+              </button>
+            </div>
+          )}
+          {order.status === "취소" && <p className="mt-3 text-right text-xs">취소된 주문이에요. 상품 재고는 되돌려졌어요.</p>}
         </li>
       ))}
-    </ul>
+      </ul>
+    </>
   )
 }

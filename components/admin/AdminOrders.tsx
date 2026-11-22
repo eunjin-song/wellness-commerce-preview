@@ -69,7 +69,7 @@ export default function AdminOrders() {
                     id={`status-${o.id}`}
                     className="field w-auto py-2"
                     value={o.status}
-                    disabled={setStatus.isPending}
+                    disabled={setStatus.isPending || o.status === "취소"}
                     onChange={(e) => handleChange(o.id, e.target.value as OrderStatus)}
                   >
                     {ORDER_STATUSES.map((s) => (

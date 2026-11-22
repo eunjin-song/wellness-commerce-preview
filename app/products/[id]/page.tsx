@@ -18,6 +18,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${product.name} — ooro.`,
     description: product.subtitle,
+    // 링크 공유 미리보기: 상품 대표 사진과 이름
+    openGraph: {
+      title: `${product.name} — ooro.`,
+      description: product.subtitle,
+      type: "website",
+      images: product.images[0] ? [{ url: product.images[0] }] : undefined,
+    },
   }
 }
 

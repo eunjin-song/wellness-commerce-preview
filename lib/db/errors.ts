@@ -20,6 +20,10 @@ export function toKoreanError(error: unknown, fallback = "잠시 후 다시 시�
     invalid_address: "배송지 정보를 다시 확인해 주세요.",
     invalid_quantity: "수량이 올바르지 않아요.",
     product_unavailable: "판매가 종료되었거나 없는 상품이 있어요. 장바구니를 확인해 주세요.",
+    order_not_found: "주문을 찾을 수 없어요.",
+    cannot_cancel: "이 주문은 직접 취소할 수 없는 상태예요. 이미 취소됐거나 배송 준비가 시작됐을 수 있어요. 문의 게시판으로 알려주세요.",
+    question_locked: "이미 답변이 달린 질문은 고칠 수 없어요. 삭제 후 다시 등록해 주세요.",
+    order_cancelled: "이미 취소된 주문은 상태를 바꿀 수 없어요.",
   }
   if (known[message]) return known[message]
 

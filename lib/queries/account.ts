@@ -130,6 +130,22 @@ export function useMyOrders() {
   })
 }
 
+/** 내 주문 취소 (아직 결제 전인 '주문 접수' 상태만). 재고는 서버가 되돌려요. */
+export function useCancelOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await requireClient().rpc("cancel_my_order", { p_order_id: orderId })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["products"] })
+    },
+  })
+}
+
 export interface PlaceOrderInput {
   items: { productId: string; quantity: number; color?: string; size?: string }[]
   address: AddressInput
