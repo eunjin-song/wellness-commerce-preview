@@ -2,16 +2,11 @@ import Link from "next/link"
 import Logo from "@/components/Logo"
 import { BUSINESS, shown } from "@/lib/business"
 
-const SHOP_LINKS = [
-  { href: "/about", label: "브랜드 이야기" },
-  { href: "/products", label: "전체 상품" },
-]
-
 export default function Footer() {
   return (
     <footer className="bg-brown text-cream">
       <div className="mx-auto max-w-[1400px] px-6 py-16 text-sm md:px-10">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <Logo className="h-8 w-auto" />
             <p className="mt-6 max-w-sm leading-relaxed">
@@ -19,19 +14,6 @@ export default function Footer() {
               쉴 수 있도록, 정직한 성분과 절제된 만듦새로 제품을 만듭니다.
             </p>
           </div>
-
-          <nav aria-label="SHOP">
-            <p className="eyebrow">Shop</p>
-            <ul className="mt-5 space-y-3">
-              {SHOP_LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="underline-offset-4 hover:underline">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
 
           <nav aria-label="CONTACT">
             <p className="eyebrow">Contact</p>

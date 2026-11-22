@@ -50,7 +50,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 대표 상품: 같은 카테고리의 사진 2장이 화면 폭 가득. 오른쪽 사진 아래 '제품 보러가기' → 그 카테고리 */}
+      {/* 대표 상품: 같은 카테고리의 사진 2장이 화면 폭 가득. 오른쪽 사진 안쪽 아래의 '제품 보러가기' → 그 카테고리 */}
       {configured && !failed && <FeaturedPair items={featured} />}
 
       {/* SHOP: 사진 / 이름·색상 / 가격·할인, 한 줄에 4개. 순서는 관리자 > 상품에서 바꿔요. */}
@@ -76,35 +76,6 @@ export default async function HomePage() {
             <ServerNotice configured={configured} />
           </div>
         )}
-      </section>
-
-      {/* 브랜드 이야기 맛보기 */}
-      <section className="bg-paper">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-20 md:grid-cols-2 md:gap-20 md:py-28">
-          <div className="relative aspect-4/3 overflow-hidden rounded-md bg-brown/10">
-            <Image
-              src="https://picsum.photos/seed/wellness-about-1/1200/900"
-              alt="원료 클로즈업"
-              fill
-              className="object-cover"
-              sizes="(min-width: 768px) 45vw, 92vw"
-            />
-          </div>
-          <div>
-            <p className="eyebrow">Brand Story</p>
-            <h2 className="mt-4 font-display text-3xl leading-snug md:text-4xl">
-              성분보다 먼저,
-              <br />
-              일상을 들여다봤습니다
-            </h2>
-            <p className="mt-6 max-w-md leading-relaxed">
-              잠들기 전 뒤척이는 밤, 아침마다 반복되는 피로감. 그 사이사이에 놓일 수 있는 가장 단순한 형태의 제품을 만들고자 했습니다.
-            </p>
-            <Link href="/about" className="btn-outline mt-8">
-              브랜드 이야기 보기
-            </Link>
-          </div>
-        </div>
       </section>
     </main>
   )

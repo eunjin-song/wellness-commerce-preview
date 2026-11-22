@@ -21,8 +21,8 @@ export const BUSINESS = {
   phone: "",
   /** 고객센터 이메일 */
   email: "",
-  /** 인스타그램 주소 예: https://www.instagram.com/ooro.official (비어 있으면 푸터에 '준비 중'으로 보여요) */
-  instagram: "",
+  /** 인스타그램 주소 (비어 있으면 푸터에 '준비 중'으로 보여요) */
+  instagram: "https://www.instagram.com/official_ooro",
   /** 고객센터 운영 시간 */
   hours: "평일 10:00 – 17:00 (점심 12:30 – 13:30, 주말·공휴일 휴무)",
   /** 개인정보 보호책임자 (보통 대표자) */
