@@ -44,7 +44,7 @@ export const OVERVIEW: { label: string; value: string }[] = [
   {
     label: "서버(Supabase)",
     value:
-      "프로젝트 'ooro'(서울) 생성·DB 구축·샘플 상품 입력·로그인 주소 설정 완료. 내 컴퓨터(localhost)에서 주문→배송 완료→후기→Q&A→관리자 답변까지 실제 서버로 시험 통과. 아직 Vercel(미리보기 주소)에는 연결 정보를 넣지 않았어요.",
+      "프로젝트 'ooro'(서울) 생성·DB 구축·샘플 상품 입력·로그인 주소 설정 완료. 내 컴퓨터(localhost)에서 주문→배송 완료→후기→Q&A→관리자 답변까지 실제 서버로 시험 통과. Vercel 환경 변수도 넣어서 dev 미리보기 주소에서 실제 상품이 보여요.",
   },
   { label: "자동 점검", value: "린트·빌드 통과, DB 보안 시험 80개 통과" },
   { label: "시험용 계정", value: "Supabase에 시험용 회원 2개(구매자·관리자, qa-*@example.com)가 있어요. 정식 오픈 전에 지워야 해요." },
@@ -61,7 +61,6 @@ export const RESUME_STEPS: string[] = [
 
 /** 다음에 할 일 (추천 순서) */
 export const NEXT_STEPS: string[] = [
-  "Vercel 환경 변수 2개(NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) 넣고 다시 배포 → 미리보기 주소에서도 상품이 보이는지 확인",
   "메일 서비스(Resend) 확정·연결 — 지금은 Supabase 기본 메일이라 이메일 문구를 못 바꾸고 팀원 주소로만 발송돼요. 연결해야 실제 가입 인증 메일 시험·문구 적용이 가능해요",
   "내 진짜 이메일로 가입해서 관리자로 지정하고, 시험용 회원 2개 삭제",
   "남은 시험: 회원가입·메일 인증·비밀번호 재설정, 찜, 배송지 관리 탭, 회원 탈퇴, 상품 등록·수정, 카카오 주소 검색 팝업",
@@ -438,8 +437,8 @@ export const GROUPS: Group[] = [
       },
       {
         title: "사이트에 Supabase 연결",
-        status: "test",
-        note: "내 컴퓨터(localhost)는 .env.local로 연결해 시험을 마쳤어요. Vercel(미리보기·운영 주소)에는 환경 변수 2개를 아직 넣지 않아서, 그 주소에서는 상품이 안 보여요.",
+        status: "done",
+        note: "내 컴퓨터(localhost)는 .env.local로, Vercel은 환경 변수 2개(Production·Preview)로 연결했어요. dev 미리보기 주소에서도 실제 서버 상품 6개가 보이는 것을 확인했어요. 운영 주소(main)는 아직 커밍순 페이지만 보여요.",
         where: ".env.local, Vercel > Settings > Environment Variables",
       },
       {
