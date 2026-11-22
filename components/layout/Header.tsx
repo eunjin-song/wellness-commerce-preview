@@ -8,13 +8,14 @@ import { signOut } from "@/lib/db/auth"
 import { useCartStore } from "@/lib/store/cart"
 import { useIsAdmin, useUser } from "@/lib/hooks"
 
+// 메뉴 이름은 영어로 통일합니다. (Q&A는 하단 CONTACT 로 옮겼어요)
 const NAV = [
-  { href: "/about", label: "브랜드 이야기" },
-  { href: "/products", label: "전체 상품" },
-  { href: "/qna", label: "Q&A" },
+  { href: "/about", label: "ABOUT" },
+  { href: "/products", label: "SHOP" },
 ]
 
-// 가운데 로고, 왼쪽 메뉴, 오른쪽 계정·장바구니 (모바일은 왼쪽 메뉴 버튼 / 오른쪽 장바구니)
+// 가운데 로고, 왼쪽 메뉴, 오른쪽 계정·장바구니·MY
+// 모바일: 왼쪽 ☰ 메뉴(ABOUT · SHOP · LOGIN/LOGOUT · ADMIN), 오른쪽 CART · MY
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
@@ -23,8 +24,6 @@ export default function Header() {
   const isAdmin = useIsAdmin()
   const count = useCartStore((state) => state.items.reduce((sum, i) => sum + i.quantity, 0))
   const loggedIn = hydrated && !!user
-  const accountHref = loggedIn ? "/mypage" : "/login"
-  const accountLabel = loggedIn ? "마이페이지" : "로그인"
 
   async function handleLogout() {
     setMenuOpen(false)
@@ -37,14 +36,14 @@ export default function Header() {
 
   const cartBadge =
     hydrated && count > 0 ? (
-      <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brown px-1 text-xs text-paper">
+      <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brown px-1 text-[10px] tracking-normal text-paper">
         {count}
       </span>
     ) : null
 
   return (
     <header className="sticky top-0 z-30 border-b border-brown/15 bg-cream/90 backdrop-blur">
-      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-5 md:py-6">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-5 md:px-10 md:py-6">
         <div className="flex items-center">
           <button
             type="button"
@@ -59,7 +58,7 @@ export default function Header() {
             </svg>
           </button>
 
-          <nav aria-label="주요 메뉴" className="hidden gap-7 text-sm md:flex">
+          <nav aria-label="주요 메뉴" className="hidden gap-8 text-xs tracking-[0.18em] md:flex">
             {NAV.map((item) => (
               <Link key={item.href} href={item.href} className={linkClass(item.href)}>
                 {item.label}
@@ -72,56 +71,60 @@ export default function Header() {
           <Logo className="h-7 w-auto md:h-8" aria-hidden="true" role="presentation" />
         </Link>
 
-        <div className="flex items-center justify-end gap-6 text-sm">
+        <div className="flex items-center justify-end gap-5 text-xs tracking-[0.18em] md:gap-7">
           {isAdmin && (
             <Link href="/admin" className={`hidden md:inline ${linkClass("/admin")}`}>
-              관리자
+              ADMIN
             </Link>
           )}
-          <Link href={accountHref} className={`hidden md:inline ${linkClass(accountHref)}`}>
-            {accountLabel}
-          </Link>
-          {loggedIn && (
+          {loggedIn ? (
             <button type="button" className="hidden underline-offset-[6px] transition hover:underline md:inline" onClick={handleLogout}>
-              로그아웃
+              LOGOUT
             </button>
+          ) : (
+            <Link href="/login" className={`hidden md:inline ${linkClass("/login")}`}>
+              LOGIN
+            </Link>
           )}
           <Link href="/cart" className={linkClass("/cart")}>
-            장바구니
+            CART
             {cartBadge}
+          </Link>
+          {/* 로그아웃 상태에서 누르면 로그인 화면으로 안내돼요 */}
+          <Link href="/mypage" className={linkClass("/mypage")}>
+            MY
           </Link>
         </div>
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label="모바일 메뉴" className="border-t border-brown/15 px-6 py-4 md:hidden">
-          <ul className="space-y-1 text-sm">
+        <nav id="mobile-menu" aria-label="모바일 메뉴" className="border-t border-brown/15 px-6 py-4 text-xs tracking-[0.18em] md:hidden">
+          <ul className="space-y-1">
             {NAV.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="block py-2.5" onClick={() => setMenuOpen(false)}>
+                <Link href={item.href} className="block py-3" onClick={() => setMenuOpen(false)}>
                   {item.label}
                 </Link>
               </li>
             ))}
-            <li>
-              <Link href={accountHref} className="block py-2.5" onClick={() => setMenuOpen(false)}>
-                {accountLabel}
-              </Link>
-            </li>
             {isAdmin && (
               <li>
-                <Link href="/admin" className="block py-2.5" onClick={() => setMenuOpen(false)}>
-                  관리자
+                <Link href="/admin" className="block py-3" onClick={() => setMenuOpen(false)}>
+                  ADMIN
                 </Link>
               </li>
             )}
-            {loggedIn && (
-              <li>
-                <button type="button" className="block w-full py-2.5 text-left" onClick={handleLogout}>
-                  로그아웃
+            <li>
+              {loggedIn ? (
+                <button type="button" className="block w-full py-3 text-left" onClick={handleLogout}>
+                  LOGOUT
                 </button>
-              </li>
-            )}
+              ) : (
+                <Link href="/login" className="block py-3" onClick={() => setMenuOpen(false)}>
+                  LOGIN
+                </Link>
+              )}
+            </li>
           </ul>
         </nav>
       )}

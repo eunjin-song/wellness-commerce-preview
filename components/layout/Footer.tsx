@@ -7,17 +7,11 @@ const SHOP_LINKS = [
   { href: "/products", label: "전체 상품" },
 ]
 
-const HELP_LINKS = [
-  { href: "/qna", label: "Q&A" },
-  { href: "/mypage", label: "마이페이지" },
-  { href: "/cart", label: "장바구니" },
-]
-
 export default function Footer() {
   return (
     <footer className="bg-brown text-cream">
-      <div className="mx-auto max-w-6xl px-6 py-16 text-sm">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr]">
+      <div className="mx-auto max-w-[1400px] px-6 py-16 text-sm md:px-10">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <Logo className="h-8 w-auto" />
             <p className="mt-6 max-w-sm leading-relaxed">
@@ -26,7 +20,7 @@ export default function Footer() {
             </p>
           </div>
 
-          <nav aria-label="둘러보기">
+          <nav aria-label="SHOP">
             <p className="eyebrow">Shop</p>
             <ul className="mt-5 space-y-3">
               {SHOP_LINKS.map((l) => (
@@ -39,16 +33,30 @@ export default function Footer() {
             </ul>
           </nav>
 
-          <nav aria-label="고객 지원">
-            <p className="eyebrow">Help</p>
+          <nav aria-label="CONTACT">
+            <p className="eyebrow">Contact</p>
             <ul className="mt-5 space-y-3">
-              {HELP_LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="underline-offset-4 hover:underline">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/qna" className="underline-offset-4 hover:underline">
+                  문의하기
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          <nav aria-label="SNS">
+            <p className="eyebrow">SNS</p>
+            <ul className="mt-5 space-y-3">
+              <li>
+                {/* 주소는 lib/business.ts 의 instagram 에 넣으면 링크가 켜져요. 비어 있으면 글자만 보여요. */}
+                {BUSINESS.instagram.trim() ? (
+                  <a href={BUSINESS.instagram} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
+                    인스타그램
+                  </a>
+                ) : (
+                  <span className="opacity-70">인스타그램 (준비 중)</span>
+                )}
+              </li>
             </ul>
           </nav>
         </div>

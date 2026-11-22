@@ -2,15 +2,15 @@
 
 /*
   ooro. 브랜드 컬러 — 이 3색만 사용합니다.
-  cream  PANTONE 11-0608 TCX (Coconut Milk)  페이지 배경
+  cream  흰색                                 페이지 배경 (이전에는 아이보리 #f1eee6 였어요. 이름만 그대로예요)
   brown  PANTONE 7531 C                      글자 · 로고 · 버튼 · 선
-  paper  위 두 색과 어울리는 따뜻한 화이트     카드 · 입력창 · 버튼 위 글자
+  paper  흰 배경 위에서 살짝 구분되는 연한 웜그레이   카드 · 입력창 · 안내 상자 · 버튼 위 글자
   (팬톤 → HEX는 화면용 근사값입니다)
 */
 @theme {
-  --color-cream: #f1eee6;
+  --color-cream: #ffffff;
   --color-brown: #7a6855;
-  --color-paper: #fcfbf8;
+  --color-paper: #f6f5f2;
 
   --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Malgun Gothic", sans-serif;

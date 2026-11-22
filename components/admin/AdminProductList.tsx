@@ -43,16 +43,16 @@ function HomeFeaturedPicker({ products }: { products: AdminProduct[] }) {
   return (
     <section aria-labelledby="featured-title" className="rounded-2xl bg-paper p-6">
       <h2 id="featured-title" className="text-sm font-semibold">
-        홈 화면 대표 상품 (큰 사진 2개)
+        홈 화면 대표 상품 (화면 폭 가득한 큰 사진 2장)
       </h2>
       <p className="mt-1 text-xs leading-relaxed">
-        홈 상단에 크게 보이고, 사진이나 &lsquo;제품 보러가기&rsquo;를 누르면 그 상품의 카테고리로 이동해요. 비워 두면 순서상 앞의 두 상품이 나와요.
+        홈 상단에 두 사진이 나란히 크게 보여요. 두 사진 모두, 그리고 오른쪽 사진 아래의 &lsquo;제품 보러가기&rsquo;를 누르면 같은 카테고리 화면으로 이동해요. 이동하는 카테고리는 오른쪽 상품의 카테고리예요(같은 카테고리의 상품 2개를 골라 주세요). 비워 두면 순서상 앞의 두 상품이 나와요.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {([0, 1] as const).map((slot) => (
           <div key={slot}>
             <label htmlFor={`featured-${slot}`} className="field-label">
-              대표 상품 {slot + 1}
+              {slot === 0 ? "왼쪽 사진 상품" : "오른쪽 사진 상품 (카테고리 기준)"}
             </label>
             <select id={`featured-${slot}`} className="field" value={current[slot]} onChange={(e) => setSlot(slot, e.target.value)}>
               <option value="">자동 (순서대로)</option>
@@ -112,7 +112,7 @@ export default function AdminProductList() {
       </div>
 
       <p className="-mt-4 text-xs leading-relaxed">
-        표의 순서가 홈 &lsquo;전체 상품&rsquo;과 전체 상품 화면에 그대로 보여요. 오른쪽의 ▲ ▼ 로 옮겨 주세요. (숨김 상품은 고객 화면에 안 보이지만 순서 자리는 유지돼요)
+        표의 순서가 홈 &lsquo;SHOP&rsquo;과 SHOP 화면에 그대로 보여요. 오른쪽의 ▲ ▼ 로 옮겨 주세요. (숨김 상품은 고객 화면에 안 보이지만 순서 자리는 유지돼요)
       </p>
 
       {error && (

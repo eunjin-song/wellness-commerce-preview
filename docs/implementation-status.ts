@@ -95,8 +95,20 @@ export const GROUPS: Group[] = [
       {
         title: "반응형·모바일 메뉴",
         status: "done",
-        note: "모바일에서는 왼쪽 햄버거 메뉴 + 가운데 로고 + 오른쪽 장바구니로 바뀌어요. 개편 뒤 주요 7개 화면(홈·상품 목록·소개·상품 상세·장바구니·Q&A·로그인)에서 가로로 삐져나오는 곳이 없는 걸 확인했어요.",
+        note: "모바일에서는 왼쪽 햄버거 메뉴(ABOUT · SHOP · LOGIN/LOGOUT) + 가운데 로고 + 오른쪽 CART · MY로 바뀌어요. 개편 뒤 주요 화면에서 가로로 삐져나오는 곳이 없는 걸 확인했어요.",
         where: "components/layout/Header.tsx",
+      },
+      {
+        title: "상단 메뉴 (영문 메뉴 이름)",
+        status: "done",
+        note: "왼쪽 ABOUT · SHOP, 가운데 로고, 오른쪽 LOGIN(로그인하면 LOGOUT) · CART · MY(관리자는 ADMIN 추가)예요. 메뉴 이름은 영어로 통일했고 Q&A 메뉴는 하단 CONTACT '문의하기'로 옮겼어요. MY는 로그아웃 상태에서 누르면 로그인 화면으로 안내돼요. 데스크톱·모바일 모두 확인했어요.",
+        where: "components/layout/Header.tsx",
+      },
+      {
+        title: "배경색 흰색 (아이보리 → 흰색)",
+        status: "done",
+        note: "페이지 배경을 아이보리에서 흰색으로 바꿨어요. 카드·입력칸·안내 상자는 흰 배경에서 구분되도록 아주 연한 웜그레이로, 글자·로고·버튼은 기존 갈색 그대로예요. 색은 app/globals.css 맨 위 3줄만 고치면 바뀌어요.",
+        where: "app/globals.css",
       },
       {
         title: "UI 개편 (참고: aeioustore.com, earthstore.kr)",
@@ -123,15 +135,15 @@ export const GROUPS: Group[] = [
         where: "app/page.tsx",
       },
       {
-        title: "홈 대표 상품 2개 (큰 사진)",
+        title: "홈 대표 상품 2개 (화면 폭 가득)",
         status: "done",
-        note: "홈 상단 바로 아래에 대표 상품 2개를 큰 사진으로 보여줘요. 사진이나 '제품 보러가기' 글자를 누르면 그 상품의 카테고리 화면(예: 슬립 케어)으로 이동하고, 해당 카테고리 탭이 선택된 상태로 열려요. 어떤 상품을 보여줄지는 관리자 > 상품에서 고르고, 비워 두면 순서상 앞쪽의 재고 있는 상품 2개가 나와요. 데스크톱·모바일 화면과 링크 이동을 확인했어요.",
+        note: "홈 상단 바로 아래에 같은 카테고리의 제품 사진 2장을 화면 양끝까지 가득 나란히 보여줘요(모바일은 위아래). 오른쪽 사진 아래에 카테고리 이름과 '제품 보러가기'가 있고, 두 사진과 그 글자를 누르면 같은 카테고리 화면(오른쪽 상품의 카테고리)으로 이동해 그 카테고리 탭이 선택된 채 열려요. 어떤 상품을 보여줄지는 관리자 > 상품에서 고르고, 비워 두면 순서상 앞쪽의 재고 있는 상품 2개가 나와요. 데스크톱·모바일 화면과 링크 이동을 확인했어요.",
         where: "components/products/FeaturedTile.tsx, app/page.tsx",
       },
       {
         title: "전체 상품 격자 (한 줄 4개) + 상품 카드",
         status: "done",
-        note: "홈과 전체 상품 화면에서 한 줄에 4개(태블릿 3개, 모바일 2개)로 보여줘요. 카드는 사진 / 이름·색상 점 / 정가(취소선)·할인율·판매가 순이고, 사진을 누르면 상품 상세로 가요. 품절 상품은 '일시 품절'로 표시돼요.",
+        note: "홈(SHOP 섹션)과 SHOP 화면에서 한 줄에 4개(태블릿 3개, 모바일 2개)로 보여줘요. 카드는 사진 / 이름·색상 점 / 정가(취소선)·할인율·판매가 순이고, 사진을 누르면 상품 상세로 가요. 품절 상품은 '일시 품절'로 표시돼요.",
         where: "components/products/ProductCard.tsx, components/products/ProductGrid.tsx",
       },
       {
@@ -143,7 +155,7 @@ export const GROUPS: Group[] = [
       {
         title: "푸터(하단)",
         status: "temp",
-        note: "로고·소개 문구, 둘러보기(SHOP)·고객 지원(HELP) 링크, 이용약관·개인정보처리방침 링크, 사업자 정보 자리가 있어요. 사업자 정보 값은 아직 비어 있어서 '준비 중'으로 보여요.",
+        note: "로고·소개 문구, SHOP(브랜드 이야기·전체 상품) · CONTACT(문의하기 → Q&A) · SNS(인스타그램) 3열, 이용약관·개인정보처리방침 링크, 사업자 정보 자리가 있어요. 인스타그램 주소(lib/business.ts 의 instagram)와 사업자 정보 값은 아직 비어 있어서 '준비 중'으로 보여요.",
         where: "components/layout/Footer.tsx",
       },
     ],

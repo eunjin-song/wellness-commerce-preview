@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import FeaturedTile from "@/components/products/FeaturedTile"
+import FeaturedPair from "@/components/products/FeaturedTile"
 import ProductCard from "@/components/products/ProductCard"
 import ServerNotice from "@/components/layout/ServerNotice"
 import { getHomeFeaturedIds, getPublicProducts } from "@/lib/db/public"
@@ -50,23 +50,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 대표 상품 2개: 사진·"제품 보러가기"를 누르면 그 상품의 카테고리로 이동 */}
-      {configured && !failed && featured.length > 0 && (
-        <section aria-label="대표 상품" className="mx-auto max-w-6xl px-6 pt-16 md:pt-24">
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-6">
-            {featured.map((product, index) => (
-              <FeaturedTile key={product.id} product={product} priority={index === 0} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* 대표 상품: 같은 카테고리의 사진 2장이 화면 폭 가득. 오른쪽 사진 아래 '제품 보러가기' → 그 카테고리 */}
+      {configured && !failed && <FeaturedPair items={featured} />}
 
-      {/* 전체 상품: 사진 / 이름·색상 / 가격·할인, 한 줄에 4개. 순서는 관리자 > 상품에서 바꿔요. */}
-      <section className="mx-auto max-w-6xl px-6 py-16 md:py-24">
+      {/* SHOP: 사진 / 이름·색상 / 가격·할인, 한 줄에 4개. 순서는 관리자 > 상품에서 바꿔요. */}
+      <section className="mx-auto max-w-[1400px] px-6 py-16 md:px-10 md:py-24">
         <div className="flex items-end justify-between gap-4 border-b border-brown/15 pb-5">
           <div>
             <p className="eyebrow">All Products</p>
-            <h2 className="mt-3 font-display text-3xl md:text-4xl">전체 상품</h2>
+            <h2 className="mt-3 font-display text-3xl md:text-4xl">SHOP</h2>
           </div>
           <Link href="/products" className="shrink-0 text-sm underline underline-offset-[6px]">
             전체 보기
