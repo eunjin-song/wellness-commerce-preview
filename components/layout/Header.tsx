@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import Logo from "@/components/Logo"
+import { signOut } from "@/lib/db/auth"
 import { useCartStore } from "@/lib/store/cart"
 import { useIsAdmin, useUser } from "@/lib/hooks"
 
@@ -16,6 +17,7 @@ const NAV = [
 // 가운데 로고, 왼쪽 메뉴, 오른쪽 계정·장바구니 (모바일은 왼쪽 메뉴 버튼 / 오른쪽 장바구니)
 export default function Header() {
   const pathname = usePathname()
+  const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const { hydrated, user } = useUser()
   const isAdmin = useIsAdmin()
@@ -23,6 +25,12 @@ export default function Header() {
   const loggedIn = hydrated && !!user
   const accountHref = loggedIn ? "/mypage" : "/login"
   const accountLabel = loggedIn ? "마이페이지" : "로그인"
+
+  async function handleLogout() {
+    setMenuOpen(false)
+    await signOut()
+    router.push("/")
+  }
 
   const linkClass = (href: string) =>
     `underline-offset-[6px] transition hover:underline ${pathname.startsWith(href) ? "underline" : ""}`
@@ -73,6 +81,11 @@ export default function Header() {
           <Link href={accountHref} className={`hidden md:inline ${linkClass(accountHref)}`}>
             {accountLabel}
           </Link>
+          {loggedIn && (
+            <button type="button" className="hidden underline-offset-[6px] transition hover:underline md:inline" onClick={handleLogout}>
+              로그아웃
+            </button>
+          )}
           <Link href="/cart" className={linkClass("/cart")}>
             장바구니
             {cartBadge}
@@ -100,6 +113,13 @@ export default function Header() {
                 <Link href="/admin" className="block py-2.5" onClick={() => setMenuOpen(false)}>
                   관리자
                 </Link>
+              </li>
+            )}
+            {loggedIn && (
+              <li>
+                <button type="button" className="block w-full py-2.5 text-left" onClick={handleLogout}>
+                  로그아웃
+                </button>
               </li>
             )}
           </ul>
