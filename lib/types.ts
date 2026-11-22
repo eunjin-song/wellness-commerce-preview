@@ -140,3 +140,19 @@ export interface Category {
   name: string
   sortOrder: number
 }
+
+/** IR(공고·공시) 게시글 */
+export interface IrPost {
+  id: number
+  title: string
+  author: string
+  content: string
+  /** 첨부파일의 저장소 안 경로 (없으면 null) */
+  filePath: string | null
+  /** 화면에 보여줄 원래 파일 이름 */
+  fileName: string | null
+  /** 게시일 (YYYY-MM-DD) */
+  publishedAt: string
+  isPublished: boolean
+  views: number
+}

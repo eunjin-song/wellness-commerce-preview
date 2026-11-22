@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="bg-brown text-cream">
       <div className="mx-auto max-w-[1400px] px-6 py-16 text-sm md:px-10">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="col-span-2 md:col-span-1">
             <Logo className="h-8 w-auto" />
             <p className="mt-6 max-w-sm leading-relaxed">
@@ -38,6 +38,17 @@ export default function Footer() {
                 ) : (
                   <span className="opacity-70">인스타그램 (준비 중)</span>
                 )}
+              </li>
+            </ul>
+          </nav>
+
+          <nav aria-label="COMPANY">
+            <p className="eyebrow">Company</p>
+            <ul className="mt-5 space-y-3">
+              <li>
+                <Link href="/ir" className="underline-offset-4 hover:underline">
+                  IR
+                </Link>
               </li>
             </ul>
           </nav>

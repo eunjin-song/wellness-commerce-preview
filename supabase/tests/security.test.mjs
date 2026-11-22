@@ -70,6 +70,7 @@ try {
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0005_product_order_and_discount.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0006_discount_rate.sql`, "utf8"))
   await c.query(fs.readFileSync(`${repo}/supabase/migrations/0007_categories.sql`, "utf8"))
+  await c.query(fs.readFileSync(`${repo}/supabase/migrations/0008_ir_posts.sql`, "utf8"))
   console.log("마이그레이션 적용 완료")
   await c.query(fs.readFileSync(`${repo}/supabase/seed.sql`, "utf8"))
   console.log("시드 적용 완료\n")
@@ -503,6 +504,52 @@ try {
   }, (r) => (r.rows.length === 1 && r.rows[0].name.endsWith("open.jpg")) || JSON.stringify(r.rows))
   await expect("Q&A 사진: 로그인 안 한 방문자도 공개 질문의 사진은 본다 (비밀글·미첨부 사진은 못 본다)", () => anon(`select name from storage.objects where bucket_id = 'question-photos'`), (r) => (r.rows.length === 1 && r.rows[0].name.endsWith("open.jpg")) || JSON.stringify(r.rows))
   await expectFail("Q&A 사진: 방문자는 사진을 올릴 수 없다", () => anon(`insert into storage.objects (bucket_id, name) values ('question-photos', '${U.alice}/anon.jpg')`), /row-level security|permission denied/)
+
+  console.log("\n[IR 공고·공시]")
+  let irA, irB
+  await expectFail("일반 회원은 IR 글을 쓸 수 없다", () => as(U.alice, `insert into public.ir_posts (title) values ('몰래')`), /row-level security|permission denied/)
+  await expectFail("비회원은 IR 글을 쓸 수 없다", () => anon(`insert into public.ir_posts (title) values ('몰래')`), /permission denied/)
+  await expect("관리자는 IR 글을 쓴다 (작성자 기본값 ooro., 게시일 기본값 오늘, 조회수 0)", async () => {
+    irA = (await as(U.admin, `insert into public.ir_posts (title, content, published_at) values ('분기보고서(2026.09)', '본문', '2026-11-16') returning *`)).rows[0]
+    irB = (await as(U.admin, `insert into public.ir_posts (title, published_at, is_published) values ('비공개 초안', '2026-11-20', false) returning *`)).rows[0]
+    return irA
+  }, (r) => (r.author === "ooro." && r.views === 0 && r.is_published === true && /^2026-11-16/.test(String(r.published_at instanceof Date ? r.published_at.toISOString() : r.published_at))) || JSON.stringify(r))
+  await expectFail("빈 제목은 안 된다", () => as(U.admin, `insert into public.ir_posts (title) values ('   ')`), /check constraint|ir_posts_title_check/)
+  await expect("방문자에게는 공개 글만 보인다", () => anon(`select title from public.ir_posts`), (r) => (r.rows.length === 1 && r.rows[0].title === "분기보고서(2026.09)") || JSON.stringify(r.rows))
+  await expect("일반 회원에게도 숨김 글은 안 보인다", () => as(U.alice, `select title from public.ir_posts`), (r) => (r.rows.length === 1) || JSON.stringify(r.rows))
+  await expect("관리자에게는 숨김 글도 보인다", () => as(U.admin, `select title from public.ir_posts order by id`), (r) => r.rows.length === 2 || JSON.stringify(r.rows))
+  await expect("최신 게시일 순서로 정렬된다 (같은 날이면 나중에 쓴 글이 먼저)", async () => {
+    await as(U.admin, `insert into public.ir_posts (title, published_at) values ('같은 날 첫 글', '2026-11-04'), ('같은 날 둘째 글', '2026-11-04'), ('가장 최신', '2026-11-30')`)
+    return anon(`select title from public.ir_posts order by published_at desc, id desc`)
+  }, (r) => JSON.stringify(r.rows.map((x) => x.title)) === JSON.stringify(["가장 최신", "분기보고서(2026.09)", "같은 날 둘째 글", "같은 날 첫 글"]) || JSON.stringify(r.rows))
+  await expect("방문자가 글을 열면 조회수가 올라간다", async () => {
+    await anon(`select public.increment_ir_views($1)`, [irA.id])
+    await anon(`select public.increment_ir_views($1)`, [irA.id])
+    return anon(`select views from public.ir_posts where id = $1`, [irA.id])
+  }, (r) => r.rows[0].views === 2 || JSON.stringify(r.rows))
+  await expect("숨김 글의 조회수는 올라가지 않는다", async () => {
+    await anon(`select public.increment_ir_views($1)`, [irB.id])
+    return as(U.admin, `select views from public.ir_posts where id = $1`, [irB.id])
+  }, (r) => r.rows[0].views === 0 || JSON.stringify(r.rows))
+  await expectFail("방문자는 조회수를 직접 고칠 수 없다", () => anon(`update public.ir_posts set views = 9999`), /permission denied/)
+  await expect("일반 회원은 글을 고칠 수 없다 (0행)", () => as(U.alice, `update public.ir_posts set title = '해킹'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("일반 회원은 글을 지울 수 없다 (0행)", () => as(U.alice, `delete from public.ir_posts`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("관리자는 숨김 글을 공개로 바꿀 수 있다", async () => {
+    await as(U.admin, `update public.ir_posts set is_published = true where id = $1`, [irB.id])
+    return anon(`select count(*)::int n from public.ir_posts`)
+  }, (r) => r.rows[0].n === 5 || JSON.stringify(r.rows))
+  await expect("관리자는 글을 지울 수 있다", async () => {
+    await as(U.admin, `delete from public.ir_posts where id = $1`, [irB.id])
+    return anon(`select count(*)::int n from public.ir_posts`)
+  }, (r) => r.rows[0].n === 4 || JSON.stringify(r.rows))
+  await expect("IR 첨부파일 저장소: 방문자도 읽을 수 있다", async () => {
+    await as(U.admin, `insert into storage.objects (bucket_id, name) values ('ir-files', 'ir/abc.pdf')`)
+    return anon(`select name from storage.objects where bucket_id = 'ir-files'`)
+  }, (r) => r.rows.length === 1 || JSON.stringify(r.rows))
+  await expectFail("IR 첨부파일은 일반 회원이 올릴 수 없다", () => as(U.alice, `insert into storage.objects (bucket_id, name) values ('ir-files', 'ir/x.pdf')`), /row-level security/)
+  await expectFail("IR 첨부파일은 방문자가 올릴 수 없다", () => anon(`insert into storage.objects (bucket_id, name) values ('ir-files', 'ir/x.pdf')`), /row-level security|permission denied/)
+  await expect("IR 첨부파일은 일반 회원이 지울 수 없다 (0행)", () => as(U.alice, `delete from storage.objects where bucket_id = 'ir-files'`), (r) => r.rowCount === 0 || r.rowCount)
+  await expect("IR 첨부파일은 관리자가 지울 수 있다", () => as(U.admin, `delete from storage.objects where bucket_id = 'ir-files'`), (r) => r.rowCount === 1 || r.rowCount)
 
   console.log("\n[회원 탈퇴]")
   await expect("탈퇴해도 주문 기록은 남고 user_id 만 비워진다", async () => {

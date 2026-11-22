@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { requireClient } from "@/lib/supabase/client"
 import { PUBLIC_BUCKET } from "@/lib/supabase/config"
 import { useIsAdmin } from "@/lib/hooks"
-import { mapAccount, mapAdminProduct, mapOrder, mapReview, type ProductRow } from "@/lib/db/mappers"
-import { uploadImages } from "@/lib/storage"
+import { mapAccount, mapAdminProduct, mapIrPost, mapOrder, mapReview, type ProductRow } from "@/lib/db/mappers"
+import { removeIrFile, uploadImages, uploadIrFile } from "@/lib/storage"
 import { salePrice } from "@/lib/pricing"
-import type { Account, AdminProduct, Order, OrderStatus, Review } from "@/lib/types"
+import type { Account, AdminProduct, IrPost, Order, OrderStatus, Review } from "@/lib/types"
 
 /* 관리자 화면의 모든 조회·수정은 DB의 RLS가 "관리자인지" 다시 확인합니다. (화면에서 숨기는 것만으로 막지 않아요) */
 
@@ -294,5 +294,93 @@ export function useSetShippingSettings() {
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings"] }),
+  })
+}
+
+/* ---------------- IR(공고·공시) ---------------- */
+
+/** 관리자용 IR 목록: 숨김 글도 포함, 최신 게시일 순 */
+export function useAdminIrPosts() {
+  const isAdmin = useIsAdmin()
+  return useQuery({
+    queryKey: ["admin", "ir"],
+    enabled: isAdmin,
+    queryFn: async (): Promise<IrPost[]> => {
+      const { data, error } = await requireClient()
+        .from("ir_posts")
+        .select("*")
+        .order("published_at", { ascending: false })
+        .order("id", { ascending: false })
+      if (error) throw error
+      return (data as Parameters<typeof mapIrPost>[0][]).map(mapIrPost)
+    },
+  })
+}
+
+export interface SaveIrPostInput {
+  /** 있으면 수정, 없으면 새 글 */
+  id?: number
+  title: string
+  author: string
+  content: string
+  /** YYYY-MM-DD */
+  publishedAt: string
+  isPublished: boolean
+  /** 새로 올릴 파일 (없으면 기존 첨부를 유지) */
+  newFile?: File | null
+  /** true 면 기존 첨부를 지워요 (새 파일을 올리면 자동으로 교체돼요) */
+  removeFile?: boolean
+  /** 기존 첨부 (교체·삭제할 때 저장소에서도 지우기 위해) */
+  existingFilePath?: string | null
+  existingFileName?: string | null
+}
+
+export function useSaveIrPost() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: SaveIrPostInput) => {
+      let filePath = input.existingFilePath ?? null
+      let fileName = input.existingFileName ?? null
+
+      if (input.newFile) {
+        const uploaded = await uploadIrFile(input.newFile)
+        filePath = uploaded.path
+        fileName = uploaded.name
+      } else if (input.removeFile) {
+        filePath = null
+        fileName = null
+      }
+
+      const row = {
+        title: input.title,
+        author: input.author,
+        content: input.content,
+        published_at: input.publishedAt,
+        is_published: input.isPublished,
+        file_path: filePath,
+        file_name: fileName,
+      }
+      const query = requireClient().from("ir_posts")
+      const { error } = input.id ? await query.update(row).eq("id", input.id) : await query.insert(row)
+      if (error) throw error
+
+      // 저장이 끝난 뒤에 예전 파일을 정리해요. (저장이 실패하면 예전 파일은 그대로 남아요)
+      if (input.existingFilePath && input.existingFilePath !== filePath) await removeIrFile(input.existingFilePath)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "ir"] }),
+  })
+}
+
+export function useDeleteIrPost() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (post: IrPost) => {
+      const { error } = await requireClient().from("ir_posts").delete().eq("id", post.id)
+      if (error) throw error
+      await removeIrFile(post.filePath)
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "ir"] }),
   })
 }

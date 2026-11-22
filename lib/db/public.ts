@@ -1,7 +1,7 @@
 import "server-only"
 import { createPublicClient } from "@/lib/supabase/server"
-import { mapProduct, type ProductRow } from "@/lib/db/mappers"
-import type { Product } from "@/lib/types"
+import { mapIrPost, mapProduct, type ProductRow } from "@/lib/db/mappers"
+import type { IrPost, Product } from "@/lib/types"
 
 /** 서버에서 쓰는 공개 상품 조회 (비회원과 같은 권한). 판매 중인 상품만 나옵니다. */
 export async function getPublicProducts(): Promise<{ products: Product[]; configured: boolean; failed: boolean }> {
@@ -64,4 +64,49 @@ export async function getCategoryNames(): Promise<string[]> {
     return []
   }
   return (data as { name: string }[]).map((c) => c.name)
+}
+
+export const IR_PAGE_SIZE = 10
+
+/** IR 목록 한 페이지 (최신 게시일 순). 방문자와 같은 권한이라 공개된 글만 나와요. */
+export async function getIrPosts(page: number): Promise<{ posts: IrPost[]; total: number; configured: boolean; failed: boolean }> {
+  const supabase = createPublicClient()
+  if (!supabase) return { posts: [], total: 0, configured: false, failed: false }
+
+  const from = (page - 1) * IR_PAGE_SIZE
+
+  // 글 수를 먼저 세요. 글 수보다 큰 페이지 번호로 범위를 요청하면 서버가 오류를 내서,
+  // 그런 경우에는 빈 목록과 전체 글 수만 돌려주고 화면이 마지막 페이지로 보내게 해요.
+  const counted = await supabase.from("ir_posts").select("id", { count: "exact", head: true })
+  if (counted.error) {
+    console.error("IR 글 수를 세지 못했어요:", counted.error.message)
+    return { posts: [], total: 0, configured: true, failed: true }
+  }
+  const totalCount = counted.count ?? 0
+  if (totalCount > 0 && from >= totalCount) return { posts: [], total: totalCount, configured: true, failed: false }
+
+  const { data, error, count } = await supabase
+    .from("ir_posts")
+    .select("*", { count: "exact" })
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, from + IR_PAGE_SIZE - 1)
+  if (error) {
+    console.error("IR 목록을 불러오지 못했어요:", error.message)
+    return { posts: [], total: 0, configured: true, failed: true }
+  }
+  return { posts: (data as Parameters<typeof mapIrPost>[0][]).map(mapIrPost), total: count ?? 0, configured: true, failed: false }
+}
+
+/** IR 글 하나. 공개된 글이 아니면 null */
+export async function getIrPost(id: number): Promise<{ post: IrPost | null; configured: boolean; failed: boolean }> {
+  const supabase = createPublicClient()
+  if (!supabase) return { post: null, configured: false, failed: false }
+
+  const { data, error } = await supabase.from("ir_posts").select("*").eq("id", id).maybeSingle()
+  if (error) {
+    console.error("IR 글을 불러오지 못했어요:", error.message)
+    return { post: null, configured: true, failed: true }
+  }
+  return { post: data ? mapIrPost(data as Parameters<typeof mapIrPost>[0]) : null, configured: true, failed: false }
 }

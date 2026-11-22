@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/supabase/client"
-import { PUBLIC_BUCKET, QUESTION_BUCKET } from "@/lib/supabase/config"
+import { IR_BUCKET, PUBLIC_BUCKET, QUESTION_BUCKET } from "@/lib/supabase/config"
 import { uid } from "@/lib/format"
 
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
@@ -50,4 +50,25 @@ export async function uploadImages(
     result.push(bucket === PUBLIC_BUCKET ? supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl : path)
   }
   return result
+}
+
+/** IR 첨부파일 올리기 (관리자 전용). 저장소 안 경로와 원래 파일 이름을 돌려줘요. */
+export async function uploadIrFile(file: File): Promise<{ path: string; name: string }> {
+  const supabase = requireClient()
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin"
+  // 한글 파일 이름은 주소에 쓰기 어려워서, 저장 이름은 무작위로 만들고 원래 이름은 따로 보관해요.
+  const path = `ir/${uid()}.${ext}`
+  const { error } = await supabase.storage.from(IR_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false })
+  if (error) throw error
+  return { path, name: file.name }
+}
+
+/** IR 첨부파일 지우기 (실패해도 글 저장·삭제는 막지 않아요) */
+export async function removeIrFile(path: string | null | undefined): Promise<void> {
+  if (!path) return
+  try {
+    await requireClient().storage.from(IR_BUCKET).remove([path])
+  } catch {
+    // 파일 정리는 베스트 에포트예요.
+  }
 }

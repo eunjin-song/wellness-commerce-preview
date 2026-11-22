@@ -12,3 +12,9 @@ export const isSupabaseConfigured = SUPABASE_URL.startsWith("http") && SUPABASE_
 /** 사진 저장소 이름 */
 export const PUBLIC_BUCKET = "public-images"
 export const QUESTION_BUCKET = "question-photos"
+
+/** IR(공고·공시) 첨부파일 저장소 (공개 읽기, 올리기·지우기는 관리자만) */
+export const IR_BUCKET = "ir-files"
+
+/** IR 첨부파일을 여는 주소 */
+export const irFileUrl = (path: string) => `${SUPABASE_URL}/storage/v1/object/public/${IR_BUCKET}/${path}`

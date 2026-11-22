@@ -1,5 +1,6 @@
 import type {
   Account,
+  IrPost,
   Address,
   AdminProduct,
   ColorOption,
@@ -245,3 +246,32 @@ export function mapSettings(value: { fee?: number; free_threshold?: number } | n
     freeShippingThreshold: value?.free_threshold ?? DEFAULT_SETTINGS.freeShippingThreshold,
   }
 }
+
+interface IrPostRow {
+  id: number
+  title: string
+  author: string
+  content: string
+  file_path: string | null
+  file_name: string | null
+  published_at: string
+  is_published: boolean
+  views: number
+}
+
+export function mapIrPost(row: IrPostRow): IrPost {
+  return {
+    id: row.id,
+    title: row.title,
+    author: row.author,
+    content: row.content,
+    filePath: row.file_path,
+    fileName: row.file_name,
+    publishedAt: row.published_at,
+    isPublished: row.is_published,
+    views: row.views,
+  }
+}
+
+/** 2026-11-16 → 2026.11.16 */
+export const dotDate = (date: string) => date.slice(0, 10).replace(/-/g, ".")

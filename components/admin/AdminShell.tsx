@@ -13,6 +13,7 @@ const TABS = [
   { href: "/admin/reviews", label: "후기" },
   { href: "/admin/members", label: "회원" },
   { href: "/admin/stats", label: "매출·통계" },
+  { href: "/admin/ir", label: "IR" },
 ]
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

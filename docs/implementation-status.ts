@@ -46,7 +46,7 @@ export const OVERVIEW: { label: string; value: string }[] = [
     value:
       "프로젝트 'ooro'(서울) 생성·DB 구축·샘플 상품 입력·로그인 주소 설정 완료. 내 컴퓨터(localhost)에서 주문→배송 완료→후기→Q&A→관리자 답변까지 실제 서버로 시험 통과. Vercel 환경 변수도 넣어서 dev 미리보기 주소에서 실제 상품이 보여요.",
   },
-  { label: "자동 점검", value: "린트·빌드 통과, DB 보안·규칙 시험 143개 통과 (재고 차감·주문 취소·수정/삭제·상품 순서·할인율·카테고리 규칙은 실제 서버에서도 확인)" },
+  { label: "자동 점검", value: "린트·빌드 통과, DB 보안·규칙 시험 163개 통과 (재고 차감·주문 취소·수정/삭제·상품 순서·할인율·카테고리·IR 규칙은 실제 서버에서도 확인)" },
   { label: "시험용 계정", value: "Supabase에 시험용 회원 2개(구매자·관리자, qa-*@example.com)와 그 주문·후기·Q&A가 있어요. 정식 오픈 전에 지워야 해요." },
   {
     label: "아직 못 해본 시험",
@@ -161,7 +161,7 @@ export const GROUPS: Group[] = [
       {
         title: "푸터(하단)",
         status: "temp",
-        note: "로고·소개 문구, CONTACT(문의하기 → Q&A) · SNS(인스타그램 → instagram.com/official_ooro) 열, 이용약관·개인정보처리방침 링크, 사업자 정보 자리가 있어요(하단의 SHOP 열은 뺐어요). 사업자 정보 값은 아직 비어 있어서 '준비 중'으로 보여요.",
+        note: "로고·소개 문구, CONTACT(문의하기 → Q&A) · SNS(인스타그램 → instagram.com/official_ooro) · COMPANY(IR → 공고·공시 게시판) 열, 이용약관·개인정보처리방침 링크, 사업자 정보 자리가 있어요(하단의 SHOP 열은 뺐어요). 사업자 정보 값은 아직 비어 있어서 '준비 중'으로 보여요.",
         where: "components/layout/Footer.tsx",
       },
     ],
@@ -485,7 +485,7 @@ export const GROUPS: Group[] = [
       {
         title: "보안 규칙",
         status: "done",
-        note: "'누가 무엇을 볼 수 있는지'를 코드가 아니라 DB가 직접 지켜요. 가상 DB에서 143개 시험을 모두 통과했어요(npm run db:test). 시험 중 찾은 버그(공개 질문의 사진이 안 보이던 문제)도 고쳤어요. 마이그레이션 0001~0007이 모두 실제 서버에 적용돼 있어요.",
+        note: "'누가 무엇을 볼 수 있는지'를 코드가 아니라 DB가 직접 지켜요. 가상 DB에서 163개 시험을 모두 통과했어요(npm run db:test). 시험 중 찾은 버그(공개 질문의 사진이 안 보이던 문제)도 고쳤어요. 마이그레이션 0001~0008이 모두 실제 서버에 적용돼 있어요.",
         where: "supabase/tests/security.test.mjs",
       },
       {
@@ -578,6 +578,18 @@ export const GROUPS: Group[] = [
     id: "legal",
     title: "법무·콘텐츠·검색 노출",
     items: [
+      {
+        title: "IR 공고·공시 게시판 (/ir)",
+        status: "done",
+        note: "하단 COMPANY > IR 에서 공고·공시 글을 표(Number · Title · Author · Date · Views)로 보고, 10개씩 페이지 번호(1 2 3 ... » Last)로 넘겨요. 번호는 최신 글이 가장 큰 숫자예요(글을 지워도 번호가 이어져요). 글을 열면 제목·작성자·날짜·조회수·내용과 첨부파일(PDF·이미지) 링크가 보이고, 조회수는 같은 브라우저에서 새로고침해도 한 번만 올라요. 숨김 글은 방문자에게 안 보이고 주소로도 못 열어요. 모바일은 제목 아래 한 줄로 보여줘요. 존재하지 않는 페이지 번호는 마지막 페이지로 이동해요. 실제 서버에서 글 12개로 목록·2페이지·상세·첨부 열기·숨김·삭제·모바일을 확인했어요(0008).",
+        where: "app/ir/page.tsx, app/ir/[id]/page.tsx, components/ir/, supabase/migrations/0008_ir_posts.sql",
+      },
+      {
+        title: "IR 글 관리 (관리자 > IR)",
+        status: "done",
+        note: "관리자 상단 'IR' 탭에서 제목 · 작성자(기본 ooro.) · 게시일 · 내용 · 첨부파일(PDF/이미지, 20MB, 1개) · 공개/숨김을 정해 글을 올리고, 수정·삭제해요. 파일을 바꾸거나 글을 지우면 저장소의 파일도 함께 지워져요. 빈 제목, 잘못된 파일 형식은 막아요. 첨부파일 주소를 아는 사람은 누구나 열 수 있어서(숨김 글의 파일 포함) 공개하면 안 되는 문서는 올리지 말아야 해요.",
+        where: "components/admin/AdminIr.tsx",
+      },
       {
         title: "이용약관·개인정보처리방침",
         status: "temp",
