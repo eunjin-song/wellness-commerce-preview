@@ -141,7 +141,6 @@ export const OPEN_ITEMS: OpenItem[] = [
     checklist: [
       "내 진짜 이메일로 가입한 뒤 SQL로 관리자 지정",
       "시험용 회원 2명(qa-buyer / qa-admin @example.com)과 그 주문·후기·Q&A 삭제",
-      "0002 마이그레이션(방문자에게 공개 문의 사진 보이기)을 Supabase SQL 편집기에서 실행",
       "아직 못 해본 시험: 회원가입·메일 인증·비밀번호 재설정·이메일 변경(메일 서비스 연결 필요), 비밀글 사진, 상품 사진 여러 장",
     ],
     where: "supabase/README.md",
